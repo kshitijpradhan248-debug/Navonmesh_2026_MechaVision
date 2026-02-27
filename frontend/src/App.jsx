@@ -438,8 +438,138 @@ function CTMeterPanel({ machine }) {
                     })}
                 </div>
             </div>
+            {/* ── Maintenance Tracker ──────────────────────────────────── */}
+            {machine.maintenance && (() => {
+                const mt = machine.maintenance
+                const hColor = mt.health_label === 'GOOD' ? '#22c55e'
+                    : mt.health_label === 'NEEDS ATTENTION' ? '#eab308' : '#ef4444'
+                const sColor = s => ({ OVERDUE: '#ef4444', DUE_SOON: '#eab308', MONITOR: '#f97316', OK: '#22c55e' })[s] || '#64748b'
+                return (
+                    <div className="machine-panel" style={{ padding: '14px 18px' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                            <div>
+                                <div style={{ fontSize: 13, fontWeight: 700 }}>🔩 Maintenance Tracker</div>
+                                <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                                    7 checks · Running hrs · Spindle hrs · Coolant hrs · Tool cycles
+                                </div>
+                            </div>
+                            {/* Health Dial */}
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{
+                                    width: 64, height: 64, borderRadius: '50%',
+                                    background: `conic-gradient(${hColor} ${mt.health * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: `0 0 14px ${hColor}44`
+                                }}>
+                                    <div style={{
+                                        width: 48, height: 48, borderRadius: '50%', background: '#111827',
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        <div style={{ fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-mono)', color: hColor, lineHeight: 1 }}>{mt.health}</div>
+                                        <div style={{ fontSize: 7, color: '#64748b' }}>HEALTH</div>
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: 8, fontWeight: 700, color: hColor, marginTop: 4, letterSpacing: 0.8 }}>{mt.health_label}</div>
+                            </div>
+                        </div>
+
+                        {/* 4 Live Counters */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
+                            {[
+                                { label: '🏭 Running', val: mt.counters.running_hours, unit: 'hrs' },
+                                { label: '⚙ Spindle', val: mt.counters.spindle_hours, unit: 'hrs' },
+                                { label: '💧 Coolant', val: mt.counters.coolant_hours, unit: 'hrs' },
+                                { label: '🔧 Tool Chg', val: mt.counters.tool_changes, unit: 'cycles' },
+                            ].map(c => (
+                                <div key={c.label} style={{
+                                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                                    borderRadius: 8, padding: '8px 10px', textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: 9, color: '#64748b', marginBottom: 3 }}>{c.label}</div>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>
+                                        {typeof c.val === 'number' && !Number.isInteger(c.val) ? c.val.toFixed(0) : c.val}
+                                    </div>
+                                    <div style={{ fontSize: 9, color: '#475569' }}>{c.unit}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Task Progress List */}
+                        <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1, marginBottom: 8 }}>MAINTENANCE SCHEDULE</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                            {mt.tasks.map(t => {
+                                const col = sColor(t.status)
+                                return (
+                                    <div key={t.id}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span style={{
+                                                    fontSize: 9, fontWeight: 800, background: col + '22', color: col,
+                                                    padding: '1px 6px', borderRadius: 10, border: `1px solid ${col}44`
+                                                }}>
+                                                    {t.status.replace('_', ' ')}
+                                                </span>
+                                                <span style={{ fontSize: 10, color: '#94a3b8' }}>{t.name}</span>
+                                            </div>
+                                            <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#475569' }}>
+                                                {t.current_val} / {t.limit} {t.unit}
+                                            </div>
+                                        </div>
+                                        <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                                            <div style={{
+                                                height: '100%', borderRadius: 3,
+                                                width: `${t.pct_used}%`,
+                                                background: t.pct_used >= 90
+                                                    ? `linear-gradient(90deg, ${col}, ${col}cc)`
+                                                    : col,
+                                                transition: 'width 0.5s ease',
+                                                boxShadow: t.status !== 'OK' ? `0 0 6px ${col}88` : 'none'
+                                            }} />
+                                        </div>
+                                        {t.status !== 'OK' && (
+                                            <div style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>
+                                                {t.status === 'OVERDUE'
+                                                    ? `⚠ Overdue by ${Math.abs(t.due_in)} ${t.unit} — ${t.energy_waste_pct}% energy waste`
+                                                    : `Due in ${t.due_in} ${t.unit}`}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Energy Waste Card */}
+                        {mt.total_energy_waste_pct > 0 && (
+                            <div style={{
+                                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+                                borderLeft: '3px solid #ef4444', borderRadius: 8, padding: '10px 14px',
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                            }}>
+                                <div>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', marginBottom: 2 }}>
+                                        ⚡ Maintenance-Induced Energy Waste
+                                    </div>
+                                    <div style={{ fontSize: 10, color: '#94a3b8' }}>
+                                        Friction, overcurrent & inefficiency from deferred maintenance
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: '#ef4444' }}>
+                                        +{mt.total_energy_waste_pct}%
+                                    </div>
+                                    <div style={{ fontSize: 9, color: '#64748b' }}>
+                                        ≈ ₹{Math.round(mt.annual_waste_rs / 1000)}K/yr wasted
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )
+            })()}
 
             {/* ── Power Quality Health Card ─────────────────────────────── */}
+
             {machine.pqa && (() => {
                 const p = machine.pqa
                 const healthColor = p.healthLabel === 'HEALTHY' ? '#22c55e'

@@ -83,15 +83,16 @@ const machineState = VMC_MACHINES.map((m, i) => ({
     ...m,
     mode: "idle", modeTick: 0, modeDuration: 4 + Math.floor(Math.random() * 10),
     modeIdx: [0, 3, 6][i],
-    history: [],   // kW history
-    history_pf: [],   // power factor history
-    history_thd: [],   // THD history
-    history_L1: [],   // phase L1 current history
-    history_L2: [],   // phase L2 current history
-    history_L3: [],   // phase L3 current history
-    kwh_total: 0,
-    cost_total: 0,
-    startTime: Date.now(),
+    history: [], history_pf: [], history_thd: [],
+    history_L1: [], history_L2: [], history_L3: [],
+    kwh_total: 0, cost_total: 0, startTime: Date.now(),
+    // ─── Maintenance counters ─────────────────────────────────────────────
+    running_hours: [250, 480, 140][i],   // pre-seed realistic hours
+    spindle_hours: [210, 430, 110][i],
+    coolant_hours: [190, 390, 100][i],
+    tool_changes: [3200, 6800, 1800][i],
+    last_service_hours: [180, 300, 100][i],   // hours since last full service
+    prev_mode: "idle",                         // to detect tool-change transitions
 }));
 
 // ─── CT Clamp: Derive 3-phase currents from power ─────────────────────────────
@@ -425,6 +426,86 @@ function powerQualityAnalyzer(ct, ratedCurrentA, claimedKw, kwhSession) {
     };
 }
 
+// ─── Maintenance Tracker Engine ───────────────────────────────────────────────
+// Tracks running hours, spindle hours, coolant hours, tool changes
+// Flags overdue maintenance which causes energy waste in VMC machines
+const MAINT_THRESHOLDS = {
+    spindle_lubrication: { counter: "spindle_hours", limit: 500, unit: "hrs", name: "Spindle Bearing Lubrication", energy_waste_pct: 4 },
+    coolant_filter: { counter: "coolant_hours", limit: 200, unit: "hrs", name: "Coolant Filter / Fluid Change", energy_waste_pct: 3 },
+    tool_holder_clean: { counter: "tool_changes", limit: 5000, unit: "cycles", name: "Tool Holder & ATC Cleaning", energy_waste_pct: 2 },
+    full_service: { counter: "running_hours", limit: 1000, unit: "hrs", name: "Full Machine Service", energy_waste_pct: 8 },
+    spindle_belt: { counter: "spindle_hours", limit: 2000, unit: "hrs", name: "Spindle Belt / Coupling Check", energy_waste_pct: 5 },
+    coolant_pump: { counter: "coolant_hours", limit: 1000, unit: "hrs", name: "Coolant Pump Inspection", energy_waste_pct: 3 },
+    way_lubrication: { counter: "running_hours", limit: 250, unit: "hrs", name: "Guideway Lubrication", energy_waste_pct: 3 },
+};
+
+function maintenanceTracker(m) {
+    const counters = {
+        running_hours: +m.running_hours.toFixed(1),
+        spindle_hours: +m.spindle_hours.toFixed(1),
+        coolant_hours: +m.coolant_hours.toFixed(1),
+        tool_changes: Math.floor(m.tool_changes),
+        since_service: +m.last_service_hours.toFixed(1),
+    };
+
+    const tasks = [];
+    let total_energy_waste_pct = 0;
+
+    Object.entries(MAINT_THRESHOLDS).forEach(([id, t]) => {
+        const current = counters[t.counter] || 0;
+        // Maintenance is cyclical — use modulo to determine position within cycle
+        const within_cycle = current % t.limit;
+        const pct_used = (within_cycle / t.limit) * 100;
+        const cycles_done = Math.floor(current / t.limit);
+        const due_in = t.limit - within_cycle;
+
+        const status = pct_used >= 100 ? "OVERDUE"
+            : pct_used >= 90 ? "DUE_SOON"
+                : pct_used >= 70 ? "MONITOR"
+                    : "OK";
+
+        if (status === "OVERDUE") total_energy_waste_pct += t.energy_waste_pct;
+        else if (status === "DUE_SOON") total_energy_waste_pct += t.energy_waste_pct * 0.5;
+
+        tasks.push({
+            id, name: t.name, status,
+            counter_key: t.counter,
+            current_val: current,
+            limit: t.limit, unit: t.unit,
+            pct_used: +Math.min(100, pct_used).toFixed(1),
+            due_in: +due_in.toFixed(0),
+            cycles_done,
+            energy_waste_pct: status !== "OK" ? t.energy_waste_pct : 0,
+        });
+    });
+
+    // Sort: OVERDUE → DUE_SOON → MONITOR → OK
+    const ORDER = { OVERDUE: 0, DUE_SOON: 1, MONITOR: 2, OK: 3 };
+    tasks.sort((a, b) => ORDER[a.status] - ORDER[b.status]);
+
+    const overdue = tasks.filter(t => t.status === "OVERDUE").length;
+    const due_soon = tasks.filter(t => t.status === "DUE_SOON").length;
+
+    // Health score: start at 100, deduct per overdue/due-soon task
+    const health = Math.max(0, 100 - (overdue * 15) - (due_soon * 8));
+    const health_label = health >= 80 ? "GOOD" : health >= 55 ? "NEEDS ATTENTION" : "CRITICAL";
+
+    // Energy penalty: poor maintenance causes friction, overcurrent, inefficiency
+    const energy_waste_kw = m.actual_total_kw_last * (Math.min(25, total_energy_waste_pct) / 100);
+
+    return {
+        counters,
+        tasks,
+        overdue,
+        due_soon,
+        health,
+        health_label,
+        total_energy_waste_pct: +Math.min(25, total_energy_waste_pct).toFixed(1),
+        energy_waste_kw: +(energy_waste_kw || 0).toFixed(3),
+        annual_waste_rs: +(energy_waste_kw * 6000 * SYSTEM.COST_PER_KWH).toFixed(0),
+    };
+}
+
 // ─── Simulation tick ──────────────────────────────────────────────────────────
 const TICK_SEC = 1; // 1 second tick
 
@@ -470,6 +551,18 @@ function simulateTick() {
         const discom = calcDISCOMPenalty(ct, m.kwh_total);
         const pqa = powerQualityAnalyzer(ct, m.rated_current_A, claimed_total_kw, m.kwh_total);
 
+        // ─── Maintenance counter increments (1 tick = 1/3600 hr) ─────────────
+        const dHr = TICK_SEC / 3600;
+        if (m.mode !== "idle") m.running_hours += dHr;
+        if (m.mode === "cutting" || m.mode === "rapid") m.spindle_hours += dHr;
+        if (m.mode === "cutting") m.coolant_hours += dHr;
+        if (m.mode === "tool_change" && m.prev_mode !== "tool_change") m.tool_changes += 1;
+        if (m.mode !== "idle") m.last_service_hours += dHr;
+        m.actual_total_kw_last = actual_total_kw;
+        m.prev_mode = m.mode;
+
+        const maintenance = maintenanceTracker(m);
+
         // Update all history buffers (60-point rolling window)
         const push60 = (arr, val) => { arr.push(+val.toFixed(3)); if (arr.length > 60) arr.shift(); };
         push60(m.history, actual_total_kw);
@@ -495,7 +588,7 @@ function simulateTick() {
             kwh_total: +m.kwh_total.toFixed(4),
             cost_total: +m.cost_total.toFixed(2),
             uptime_ms: uptimeMs,
-            savings, anomalies, co2, discom, pqa,
+            savings, anomalies, co2, discom, pqa, maintenance,
             // ─ Graph histories ─
             history: [...m.history],
             history_pf: [...m.history_pf],
