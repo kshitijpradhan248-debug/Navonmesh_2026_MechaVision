@@ -208,7 +208,7 @@ function PhaseBar({ phase, current, voltage, rated }) {
                 </div>
                 <span style={{ color: '#64748b', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{fmt(voltage, 1)} V</span>
             </div>
-            <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: 6, background: '#EEF2FF', borderRadius: 3, overflow: 'hidden' }}>
                 <div style={{
                     height: '100%', width: `${pct}%`, background: warning ? '#ef4444' : color,
                     borderRadius: 3, transition: 'width 0.4s ease',
@@ -268,7 +268,7 @@ function CTMeterPanel({ machine }) {
                 </div>
 
                 {/* Big power display */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'rgba(0,0,0,0.3)', borderRadius: 12, marginBottom: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'linear-gradient(135deg,#EEF2FF,#F0FDF9)', borderRadius: 12, marginBottom: 14, border: '1.5px solid #E0E7FF' }}>
                     <LCDValue value={fmt(ct.power_kw, 2)} unit="kW" label="Real Power" color="#3b82f6" />
                     <LCDValue value={fmt(ct.apparent_kva, 2)} unit="kVA" label="Apparent Power" color="#a855f7" />
                     <LCDValue value={fmt(ct.reactive_kvar, 2)} unit="kVAR" label="Reactive Power" color="#f97316" />
@@ -290,7 +290,7 @@ function CTMeterPanel({ machine }) {
                         { label: 'THD', val: `${fmt(ct.thd_pct, 2)} %`, color: thdColor },
                         { label: 'Current Imbalance', val: `${fmt(Math.abs(ct.phase_current.L1 - ct.phase_current.L3), 2)} A`, color: '#f97316' },
                     ].map(item => (
-                        <div key={item.label} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                        <div key={item.label} style={{ flex: 1, background: '#F5F3FF', border: '1.5px solid #DDD6FE', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
                             <div style={{ fontSize: 9, color: '#64748b', marginBottom: 3, letterSpacing: 0.8 }}>{item.label}</div>
                             <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 700, color: item.color }}>{item.val}</div>
                         </div>
@@ -302,7 +302,7 @@ function CTMeterPanel({ machine }) {
             <div className="machine-panel" style={{ padding: '14px 18px' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>🕐 24/7 Energy Accumulator</div>
                 <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>Running total since machine was switched on this session</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(0,0,0,0.3)', borderRadius: 12, marginBottom: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'linear-gradient(135deg,#F0FDF9,#EEF2FF)', borderRadius: 12, marginBottom: 14, border: '1.5px solid #D1FAE5' }}>
                     <LCDValue value={fmt(machine.kwh_total, 4)} unit="kWh" label="Total Energy" color="#22c55e" size={22} />
                     <LCDValue value={`₹ ${fmt(machine.cost_total, 2)}`} unit="INR" label="Total Cost" color="#eab308" size={18} />
                     <LCDValue value={fmt(machine.actual_total_kw, 2)} unit="kW" label="Current Draw" color="#3b82f6" size={22} />
@@ -338,7 +338,7 @@ function CTMeterPanel({ machine }) {
                                     {fmt(actual, 3)} kW <span style={{ color: '#475569', fontSize: 9 }}>/ {fmt(claimed, 2)} kW</span>
                                 </span>
                             </div>
-                            <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: 4, background: '#EEF2FF', borderRadius: 2, overflow: 'hidden' }}>
                                 <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.5s ease', borderRadius: 2 }} />
                             </div>
                         </div>
@@ -372,7 +372,7 @@ function CTMeterPanel({ machine }) {
                 </div>
 
                 {/* Divider */}
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 18px' }} />
+                <div style={{ height: 1, background: '#E0E7FF', margin: '0 0 18px' }} />
 
                 {/* Chart 2: 3-Phase Current History */}
                 <div style={{ marginBottom: 20 }}>
@@ -397,7 +397,7 @@ function CTMeterPanel({ machine }) {
                 </div>
 
                 {/* Divider */}
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 18px' }} />
+                <div style={{ height: 1, background: '#E0E7FF', margin: '0 0 18px' }} />
 
                 {/* Chart 3: Component bar breakdown */}
                 <ComponentBarChart machine={machine} />
@@ -415,14 +415,14 @@ function CTMeterPanel({ machine }) {
                         return (
                             <div key={key} style={{
                                 flex: '1 1 130px', minWidth: 130,
-                                background: isTop ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.03)',
-                                border: `1px solid ${isTop ? 'rgba(59,130,246,0.35)' : 'rgba(255,255,255,0.07)'}`,
+                                background: isTop ? '#EFF6FF' : '#FAFAFA',
+                                border: `1.5px solid ${isTop ? '#BFDBFE' : '#E5E7EB'}`,
                                 borderRadius: 10, padding: 12
                             }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: isTop ? '#60a5fa' : '#94a3b8', marginBottom: 6 }}>{sc.label}</div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: isTop ? '#2563EB' : '#6B7280', marginBottom: 6 }}>{sc.label}</div>
                                 <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#22c55e' }}>-{fmt(sc.saving_kw, 2)} <span style={{ fontSize: 9, color: '#64748b', fontWeight: 400 }}>kW</span></div>
                                 <div style={{ fontSize: 11, color: '#eab308' }}>{sc.saving_pct}% saving</div>
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <div style={{ borderTop: '1.5px solid #E5E7EB', marginTop: 8, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
                                     {[
                                         { l: 'Annual Save', v: `₹${(sc.saving_rs_year / 1000).toFixed(0)}K`, c: '#22c55e' },
                                         { l: 'Install Cost', v: `₹${(sc.est_cost_rs / 1000).toFixed(0)}K`, c: '#94a3b8' },
@@ -458,12 +458,12 @@ function CTMeterPanel({ machine }) {
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{
                                     width: 64, height: 64, borderRadius: '50%',
-                                    background: `conic-gradient(${hColor} ${mt.health * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+                                    background: `conic-gradient(${hColor} ${mt.health * 3.6}deg, #E0E7FF 0deg)`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: `0 0 14px ${hColor}44`
                                 }}>
                                     <div style={{
-                                        width: 48, height: 48, borderRadius: '50%', background: '#111827',
+                                        width: 48, height: 48, borderRadius: '50%', background: '#FFFFFF',
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
                                     }}>
                                         <div style={{ fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-mono)', color: hColor, lineHeight: 1 }}>{mt.health}</div>
@@ -483,11 +483,11 @@ function CTMeterPanel({ machine }) {
                                 { label: '🔧 Tool Chg', val: mt.counters.tool_changes, unit: 'cycles' },
                             ].map(c => (
                                 <div key={c.label} style={{
-                                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                                    background: 'linear-gradient(135deg,#F5F3FF,#EEF2FF)', border: '1.5px solid #E0E7FF',
                                     borderRadius: 8, padding: '8px 10px', textAlign: 'center'
                                 }}>
                                     <div style={{ fontSize: 9, color: '#64748b', marginBottom: 3 }}>{c.label}</div>
-                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 800, color: '#1E293B' }}>
                                         {typeof c.val === 'number' && !Number.isInteger(c.val) ? c.val.toFixed(0) : c.val}
                                     </div>
                                     <div style={{ fontSize: 9, color: '#475569' }}>{c.unit}</div>
@@ -516,7 +516,7 @@ function CTMeterPanel({ machine }) {
                                                 {t.current_val} / {t.limit} {t.unit}
                                             </div>
                                         </div>
-                                        <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                                        <div style={{ height: 6, background: '#EEF2FF', borderRadius: 3, overflow: 'hidden' }}>
                                             <div style={{
                                                 height: '100%', borderRadius: 3,
                                                 width: `${t.pct_used}%`,
@@ -599,13 +599,13 @@ function CTMeterPanel({ machine }) {
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{
                                     width: 64, height: 64, borderRadius: '50%',
-                                    background: `conic-gradient(${healthColor} ${p.healthScore * 3.6}deg, rgba(255,255,255,0.07) 0deg)`,
+                                    background: `conic-gradient(${healthColor} ${p.healthScore * 3.6}deg, #E0E7FF 0deg)`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: `0 0 14px ${healthColor}44`
                                 }}>
                                     <div style={{
                                         width: 48, height: 48, borderRadius: '50%',
-                                        background: '#111827',
+                                        background: '#FFFFFF',
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
                                     }}>
                                         <div style={{ fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-mono)', color: healthColor, lineHeight: 1 }}>{p.healthScore}</div>
@@ -646,13 +646,13 @@ function CTMeterPanel({ machine }) {
                                     {p.recommendations.map((r, i) => (
                                         <div key={i} style={{
                                             display: 'flex', gap: 10, alignItems: 'flex-start',
-                                            background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)',
+                                            background: '#EFF6FF', border: '1.5px solid #BFDBFE',
                                             borderLeft: '3px solid #3b82f6', borderRadius: 8, padding: '8px 12px'
                                         }}>
                                             <span style={{ fontSize: 14, flexShrink: 0 }}>🔧</span>
                                             <div>
-                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', marginBottom: 2 }}>{r.action}</div>
-                                                <div style={{ fontSize: 10, color: '#94a3b8' }}>{r.reason}</div>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#1D4ED8', marginBottom: 2 }}>{r.action}</div>
+                                                <div style={{ fontSize: 10, color: '#475569' }}>{r.reason}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -668,12 +668,12 @@ function CTMeterPanel({ machine }) {
                                 return (
                                     <div key={u.name} style={{
                                         flex: '1 1 160px', minWidth: 160,
-                                        background: u.applicable ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
-                                        border: `1px solid ${u.applicable ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)'}`,
+                                        background: u.applicable ? '#FAFAFA' : '#F9FAFB',
+                                        border: `1.5px solid ${u.applicable ? '#E0E7FF' : '#F3F4F6'}`,
                                         borderRadius: 10, padding: 12,
                                         opacity: u.applicable ? 1 : 0.4
                                     }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: u.applicable ? '#f1f5f9' : '#64748b' }}>{u.name}</div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: u.applicable ? '#1E293B' : '#9CA3AF' }}>{u.name}</div>
                                         <div style={{ fontSize: 10, color: '#64748b', marginBottom: 8 }}>{u.benefit}</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                             {[
@@ -746,7 +746,7 @@ function CTMeterPanel({ machine }) {
                                             <span style={{ fontSize: 12, fontWeight: 700 }}>{a.title}</span>
                                             <span style={{ marginLeft: 'auto', fontSize: 9, color: '#475569', fontFamily: 'var(--font-mono)' }}>{a.code}</span>
                                         </div>
-                                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{a.message}</div>
+                                        <div style={{ fontSize: 11, color: '#475569', marginBottom: 4 }}>{a.message}</div>
                                         <div style={{ display: 'flex', gap: 16, fontSize: 10 }}>
                                             <span style={{ color: '#64748b' }}>⚠ {a.impact}</span>
                                             <span style={{ color: '#3b82f6' }}>→ {a.fix}</span>
@@ -766,7 +766,7 @@ function CTMeterPanel({ machine }) {
                     <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>
                         Indian grid factor: {machine.co2.factor} kg CO₂ / kWh (CEA 2023)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(0,0,0,0.3)', borderRadius: 12, marginBottom: 14 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'linear-gradient(135deg,#ECFDF5,#F0FDF4)', borderRadius: 12, marginBottom: 14, border: '1.5px solid #A7F3D0' }}>
                         <LCDValue value={fmt(machine.co2.kg_total, 4)} unit="kg CO₂" label="Total Emitted" color="#ef4444" size={20} />
                         <LCDValue value={fmt(machine.kwh_total, 4)} unit="kWh" label="Energy Used" color="#22c55e" size={20} />
                         <LCDValue value={fmt(machine.co2.trees_equiv, 4)} unit="trees/yr" label="Tree Equiv." color="#4ade80" size={20} />
@@ -798,7 +798,7 @@ function CTMeterPanel({ machine }) {
                     <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>
                         Based on MSEDCL/BESCOM tariff schedule · Penalty threshold: PF &lt; {machine.discom.threshold} · Optimal: PF ≥ {machine.discom.optimal}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(0,0,0,0.3)', borderRadius: 12, marginBottom: 14 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'linear-gradient(135deg,#FEF3C7,#FFF7ED)', borderRadius: 12, marginBottom: 14, border: '1.5px solid #FCD34D' }}>
                         <LCDValue
                             value={fmt(machine.discom.pf, 3)}
                             unit="Power Factor"
@@ -817,8 +817,8 @@ function CTMeterPanel({ machine }) {
                             { label: 'Fix: VFD PF Correction', val: 'Built-in on most VFDs' },
                         ].map(r => (
                             <div key={r.label} style={{
-                                flex: '1 1 150px', background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 12px'
+                                flex: '1 1 150px', background: '#FAFAFA',
+                                border: '1.5px solid #E5E7EB', borderRadius: 8, padding: '8px 12px'
                             }}>
                                 <div style={{ fontSize: 9, color: '#64748b', marginBottom: 3 }}>{r.label}</div>
                                 <div style={{ fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{r.val}</div>
@@ -949,7 +949,7 @@ export default function App() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <div className="header-time">{time.toLocaleTimeString('en-IN', { hour12: false })}</div>
-                    <div style={{ fontSize: 9, color: '#475569' }}>{time.toLocaleDateString('en-IN')}</div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)' }}>{time.toLocaleDateString('en-IN')}</div>
                 </div>
             </header>
 
