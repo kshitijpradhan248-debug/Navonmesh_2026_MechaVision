@@ -219,7 +219,197 @@ function PhaseBar({ phase, current, voltage, rated }) {
     )
 }
 
+// ─── Machine Setup Panel ──────────────────────────────────────────────────────
+function MachineSetupPanel({ machine, catalog, socket, slot }) {
+    const [open, setOpen] = useState(false)
+    const [catId, setCatId] = useState('')
+    const [custom, setCustom] = useState({})
+    const [applied, setApplied] = useState(false)
+
+    const selected = catalog.find(c => c.id === catId)
+
+    const COMP_LABELS = [
+        { key: 'spindle_kw', label: '⚙ Spindle Motor' },
+        { key: 'x_axis_kw', label: '↔ X-Axis Servo' },
+        { key: 'y_axis_kw', label: '↕ Y-Axis Servo' },
+        { key: 'z_axis_kw', label: '↗ Z-Axis Servo' },
+        { key: 'coolant_kw', label: '💧 Coolant Pump' },
+        { key: 'atc_kw', label: '🔧 ATC Motor' },
+        { key: 'aux_kw', label: '💡 Aux / Control' },
+    ]
+
+    function handleApply() {
+        if (!catId) return
+        const components = {}
+        COMP_LABELS.forEach(({ key }) => {
+            if (custom[key] !== undefined && custom[key] !== '') components[key] = parseFloat(custom[key])
+        })
+        socket.emit('configure_machine', {
+            slot,
+            catalog_id: catId,
+            custom: {
+                ...(custom.rated_current_A ? { rated_current_A: parseFloat(custom.rated_current_A) } : {}),
+                ...(Object.keys(components).length ? { components } : {}),
+            }
+        })
+        setApplied(true)
+        setTimeout(() => setApplied(false), 3000)
+    }
+
+    const indian = catalog.filter(c => c.origin === 'Indian')
+    const imported = catalog.filter(c => !['Indian', '—'].includes(c.origin))
+    const custom_m = catalog.filter(c => c.origin === '—')
+
+    return (
+        <div className="machine-panel" style={{ padding: '14px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>🏭 Machine Configurator</div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                        Select from catalog or enter custom specifications
+                    </div>
+                </div>
+                <button onClick={() => setOpen(o => !o)} style={{
+                    background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff',
+                    border: 'none', borderRadius: 20, padding: '5px 16px', fontSize: 11,
+                    fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(99,102,241,0.35)'
+                }}>
+                    {open ? '▲ Close' : '⚙ Configure'}
+                </button>
+            </div>
+
+            {/* Current machine chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                <span style={{ fontSize: 10, color: '#6366F1', fontWeight: 700 }}>NOW RUNNING:</span>
+                <span style={{ background: '#EEF2FF', border: '1.5px solid #C7D2FE', borderRadius: 20, padding: '2px 12px', fontSize: 10, fontWeight: 700, color: '#4338CA' }}>
+                    {machine.make} {machine.model}
+                </span>
+                <span style={{ fontSize: 10, color: '#64748b' }}>· {machine.rated_current_A}A rated · {machine.claimed?.total_kw?.toFixed?.(1)} kW nameplate</span>
+            </div>
+
+            {open && (
+                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ height: 1, background: '#E0E7FF' }} />
+
+                    {/* ── Step 1: Catalog Dropdown ── */}
+                    <div>
+                        <div style={{ fontSize: 9, color: '#6366F1', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
+                            STEP 1 — SELECT MACHINE FROM CATALOG
+                        </div>
+                        <select value={catId} onChange={e => { setCatId(e.target.value); setCustom({}) }} style={{
+                            width: '100%', padding: '8px 12px', borderRadius: 10, border: '1.5px solid #C7D2FE',
+                            background: '#F5F3FF', fontSize: 12, fontWeight: 600, color: '#1E293B',
+                            outline: 'none', cursor: 'pointer', appearance: 'auto'
+                        }}>
+                            <option value="">— Choose a machine —</option>
+                            <optgroup label="🇮🇳 Indian Made (Popular in Maharashtra / India)">
+                                {indian.map(c => <option key={c.id} value={c.id}>{c.make} {c.model} ({c.type}) · {c.city}</option>)}
+                            </optgroup>
+                            <optgroup label="🌐 Imported (Tier-1 / Premium)">
+                                {imported.map(c => <option key={c.id} value={c.id}>{c.make} {c.model} ({c.type}) · {c.origin}</option>)}
+                            </optgroup>
+                            <optgroup label="✏ Custom">
+                                {custom_m.map(c => <option key={c.id} value={c.id}>{c.make} — {c.model}</option>)}
+                            </optgroup>
+                        </select>
+
+                        {/* Selected machine info card */}
+                        {selected && (
+                            <div style={{ marginTop: 10, background: 'linear-gradient(135deg,#F5F3FF,#EEF2FF)', border: '1.5px solid #C7D2FE', borderRadius: 12, padding: '10px 14px' }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#4338CA', marginBottom: 4 }}>
+                                    {selected.make} {selected.model} <span style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>· {selected.type} · {selected.city}</span>
+                                </div>
+                                <div style={{ fontSize: 10, color: '#6366F1', marginBottom: 8 }}>
+                                    📍 {selected.popular}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                                    {[
+                                        { l: 'Rated Current', v: `${selected.rated_current_A}A` },
+                                        { l: 'Spindle', v: `${selected.claimed.spindle_kw}kW` },
+                                        { l: 'Total kW', v: `${selected.claimed.total_kw?.toFixed?.(1)}kW` },
+                                        { l: 'Spindle RPM', v: `${(selected.spindle_rpm || 0).toLocaleString()} rpm` },
+                                        { l: 'X Travel', v: `${selected.x_travel}mm` },
+                                        { l: 'Y Travel', v: `${selected.y_travel}mm` },
+                                        { l: 'Z Travel', v: `${selected.z_travel}mm` },
+                                        { l: 'Origin', v: selected.origin },
+                                    ].map(r => (
+                                        <div key={r.l} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 8, padding: '6px 8px' }}>
+                                            <div style={{ fontSize: 8, color: '#64748b' }}>{r.l}</div>
+                                            <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#4338CA' }}>{r.v}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Step 2: Custom Observed Overrides ── */}
+                    {selected && (
+                        <div>
+                            <div style={{ height: 1, background: '#E0E7FF', marginBottom: 14 }} />
+                            <div style={{ fontSize: 9, color: '#10B981', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
+                                STEP 2 — ENTER YOUR OBSERVED / ACTUAL VALUES (OPTIONAL)
+                            </div>
+                            <div style={{ fontSize: 9, color: '#64748b', marginBottom: 10 }}>
+                                Leave blank to use catalog nameplate specs. Fill in your field-measured values to compare against benchmark.
+                            </div>
+
+                            {/* Rated Current override */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 10, padding: '8px 12px' }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: '#92400E', flex: 1 }}>⚡ Your Observed Rated Current (A)</span>
+                                <input
+                                    type="number" step="0.1" min="0" max="200"
+                                    placeholder={`Catalog: ${selected.rated_current_A}A`}
+                                    value={custom.rated_current_A || ''}
+                                    onChange={e => setCustom(c => ({ ...c, rated_current_A: e.target.value }))}
+                                    style={{ width: 100, padding: '4px 8px', borderRadius: 8, border: '1.5px solid #FCD34D', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textAlign: 'right', outline: 'none', background: 'white' }}
+                                />
+                                <span style={{ fontSize: 10, color: '#92400E' }}>A</span>
+                            </div>
+
+                            {/* Component kW overrides */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {COMP_LABELS.map(({ key, label }) => (
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 10, color: '#475569', flex: 1 }}>{label}</span>
+                                        <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#64748b', width: 60, textAlign: 'right' }}>
+                                            Catalog: {selected.claimed[key]?.toFixed?.(2) ?? '—'}kW
+                                        </div>
+                                        <input
+                                            type="number" step="0.1" min="0"
+                                            placeholder="Your val"
+                                            value={custom[key] || ''}
+                                            onChange={e => setCustom(c => ({ ...c, [key]: e.target.value }))}
+                                            style={{ width: 80, padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${custom[key] ? '#A5B4FC' : '#E0E7FF'}`, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textAlign: 'right', outline: 'none', background: custom[key] ? '#EEF2FF' : 'white' }}
+                                        />
+                                        <span style={{ fontSize: 10, color: '#64748b' }}>kW</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Apply Button */}
+                    {catId && (
+                        <button onClick={handleApply} style={{
+                            width: '100%', padding: '10px',
+                            background: applied ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                            color: '#fff', border: 'none', borderRadius: 12, fontSize: 13,
+                            fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5,
+                            boxShadow: '0 4px 16px rgba(99,102,241,0.35)',
+                            transition: 'all 0.3s'
+                        }}>
+                            {applied ? '✅ Configuration Applied!' : `🚀 Apply — ${selected?.make || ''} ${selected?.model || ''}`}
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
 // ─── CT Clamp Device Panel ────────────────────────────────────────────────────
+
 function CTMeterPanel({ machine }) {
     const ct = machine.ct_meter
     if (!ct) return null
@@ -919,13 +1109,17 @@ export default function App() {
     const [machines, setMachines] = useState([])
     const [connected, setConnected] = useState(false)
     const [selected, setSelected] = useState(0)
+    const [catalog, setCatalog] = useState([])
+    const socketRef = useRef(null)
     const time = useTime()
 
     useEffect(() => {
         const s = io(BACKEND_URL, { transports: ['websocket'] })
+        socketRef.current = s
         s.on('connect', () => setConnected(true))
         s.on('disconnect', () => setConnected(false))
         s.on('telemetry', (d) => setMachines(d.machines))
+        s.on('catalog', (c) => setCatalog(c))
         return () => s.disconnect()
     }, [])
 
@@ -967,7 +1161,17 @@ export default function App() {
                 <section className="viewport" style={{ overflowY: 'auto', padding: '16px 20px' }}>
                     {!sm
                         ? <div className="loader"><div className="spinner" /><span>Waiting for CT readings…</span></div>
-                        : <CTMeterPanel machine={sm} />
+                        : <>
+                            {catalog.length > 0 && (
+                                <MachineSetupPanel
+                                    machine={sm}
+                                    catalog={catalog}
+                                    socket={socketRef.current}
+                                    slot={selected}
+                                />
+                            )}
+                            <CTMeterPanel machine={sm} />
+                        </>
                     }
                 </section>
             </div>

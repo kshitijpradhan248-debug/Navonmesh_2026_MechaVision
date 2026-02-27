@@ -63,7 +63,106 @@ const VMC_MACHINES = [
     },
 ];
 
-// ─── Mode profiles ────────────────────────────────────────────────────────────
+// ─── Indian CNC / VMC Machine Catalog ────────────────────────────────────────
+// Sources: OEM spec sheets, IMTMA machine tool database, Maharashtra field data
+const MACHINE_CATALOG = [
+    // ── Indian Made ──────────────────────────────────────────────────────────
+    {
+        id: "ACE_MCV450", make: "Ace Micromatic", model: "MCV 450", type: "VMC", origin: "Indian", city: "Bengaluru",
+        popular: "Most common VMC — Pune / Nashik / Aurangabad MSME", spindle_rpm: 8000, x_travel: 450, y_travel: 400, z_travel: 450,
+        rated_current_A: 28, claimed: { spindle_kw: 7.5, x_axis_kw: 1.2, y_axis_kw: 1.0, z_axis_kw: 0.9, coolant_kw: 0.55, atc_kw: 0.4, aux_kw: 0.45, total_kw: 12.0 }, idle_kw: 2.6
+    },
+
+    {
+        id: "ACE_MCV500", make: "Ace Micromatic", model: "MCV 500", type: "VMC", origin: "Indian", city: "Bengaluru",
+        popular: "Die & mould automotive Tier-2 — Maharashtra", spindle_rpm: 8000, x_travel: 500, y_travel: 450, z_travel: 500,
+        rated_current_A: 38, claimed: { spindle_kw: 11.0, x_axis_kw: 1.5, y_axis_kw: 1.2, z_axis_kw: 1.0, coolant_kw: 0.75, atc_kw: 0.55, aux_kw: 0.6, total_kw: 16.6 }, idle_kw: 3.2
+    },
+
+    {
+        id: "BFW_VMC400", make: "Bharat Fritz Werner", model: "VMC 400", type: "VMC", origin: "Indian", city: "Bengaluru",
+        popular: "Legacy workhorse — Pune / Satara / Kolhapur MSME", spindle_rpm: 8000, x_travel: 400, y_travel: 310, z_travel: 350,
+        rated_current_A: 28, claimed: { spindle_kw: 7.5, x_axis_kw: 1.5, y_axis_kw: 1.5, z_axis_kw: 1.5, coolant_kw: 0.37, atc_kw: 0.25, aux_kw: 0.5, total_kw: 13.12 }, idle_kw: 2.8
+    },
+
+    {
+        id: "JYOTI_VMC430", make: "Jyoti CNC Automation", model: "VMC 430", type: "VMC", origin: "Indian", city: "Rajkot",
+        popular: "Gujarat & Maharashtra automotive ancillary SMEs", spindle_rpm: 8000, x_travel: 430, y_travel: 380, z_travel: 420,
+        rated_current_A: 40, claimed: { spindle_kw: 11.0, x_axis_kw: 2.0, y_axis_kw: 2.0, z_axis_kw: 2.0, coolant_kw: 0.37, atc_kw: 0.37, aux_kw: 0.75, total_kw: 18.49 }, idle_kw: 3.5
+    },
+
+    {
+        id: "JYOTI_DX200", make: "Jyoti CNC Automation", model: "DX 200", type: "CNC Lathe", origin: "Indian", city: "Rajkot",
+        popular: "Turning shops across Maharashtra — batch production", spindle_rpm: 4000, x_travel: 200, y_travel: 0, z_travel: 500,
+        rated_current_A: 32, claimed: { spindle_kw: 11.0, x_axis_kw: 1.0, y_axis_kw: 0.0, z_axis_kw: 0.8, coolant_kw: 0.37, atc_kw: 0.25, aux_kw: 0.4, total_kw: 13.82 }, idle_kw: 2.8
+    },
+
+    {
+        id: "MTAB_AX500", make: "MTAB Engineers", model: "AX 500", type: "VMC", origin: "Indian", city: "Chennai",
+        popular: "Entry-level VMC — first machine for Nashik / Palghar shops", spindle_rpm: 6000, x_travel: 500, y_travel: 400, z_travel: 400,
+        rated_current_A: 18, claimed: { spindle_kw: 5.5, x_axis_kw: 1.2, y_axis_kw: 1.2, z_axis_kw: 1.2, coolant_kw: 0.18, atc_kw: 0.18, aux_kw: 0.4, total_kw: 9.88 }, idle_kw: 2.1
+    },
+
+    {
+        id: "ELEC_EVM1050", make: "Electronica Machine Tools", model: "EVM 1050", type: "VMC", origin: "Indian", city: "Pune",
+        popular: "Pune aerospace & defence precision machining", spindle_rpm: 10000, x_travel: 1050, y_travel: 610, z_travel: 600,
+        rated_current_A: 52, claimed: { spindle_kw: 15.0, x_axis_kw: 2.0, y_axis_kw: 1.8, z_axis_kw: 1.5, coolant_kw: 1.5, atc_kw: 1.0, aux_kw: 1.0, total_kw: 23.8 }, idle_kw: 4.5
+    },
+
+    {
+        id: "LOKESH_VMC850", make: "Lokesh Machines (LMW)", model: "VMC 850", type: "VMC", origin: "Indian", city: "Coimbatore",
+        popular: "Nashik / Aurangabad auto-component machining", spindle_rpm: 8000, x_travel: 850, y_travel: 500, z_travel: 520,
+        rated_current_A: 40, claimed: { spindle_kw: 11.0, x_axis_kw: 1.5, y_axis_kw: 1.2, z_axis_kw: 1.0, coolant_kw: 0.75, atc_kw: 0.6, aux_kw: 0.5, total_kw: 16.55 }, idle_kw: 3.2
+    },
+
+    {
+        id: "HMT_VMC325", make: "HMT Machine Tools", model: "VMC 325", type: "VMC", origin: "Indian", city: "Bengaluru",
+        popular: "Legacy government & PSU workshops — older private shops", spindle_rpm: 6000, x_travel: 325, y_travel: 280, z_travel: 330,
+        rated_current_A: 28, claimed: { spindle_kw: 7.5, x_axis_kw: 1.0, y_axis_kw: 0.8, z_axis_kw: 0.75, coolant_kw: 0.5, atc_kw: 0.4, aux_kw: 0.4, total_kw: 11.35 }, idle_kw: 2.5
+    },
+
+    {
+        id: "ACE_LT16", make: "Ace Micromatic", model: "LT-16 CNC Lathe", type: "CNC Lathe", origin: "Indian", city: "Bengaluru",
+        popular: "Ultra-common in Maharashtra turning shops", spindle_rpm: 4500, x_travel: 160, y_travel: 0, z_travel: 400,
+        rated_current_A: 28, claimed: { spindle_kw: 7.5, x_axis_kw: 0.8, y_axis_kw: 0.0, z_axis_kw: 0.6, coolant_kw: 0.37, atc_kw: 0.25, aux_kw: 0.35, total_kw: 9.87 }, idle_kw: 2.2
+    },
+
+    // ── Imported (Tier-1 suppliers) ──────────────────────────────────────────
+    {
+        id: "HAAS_VF2", make: "Haas Automation", model: "VF-2", type: "VMC", origin: "USA", city: "Oxnard, CA",
+        popular: "Tier-1 auto suppliers — Chakan / Talegaon MIDC Pune", spindle_rpm: 8100, x_travel: 762, y_travel: 406, z_travel: 508,
+        rated_current_A: 68, claimed: { spindle_kw: 22.4, x_axis_kw: 2.5, y_axis_kw: 2.2, z_axis_kw: 1.8, coolant_kw: 2.0, atc_kw: 1.2, aux_kw: 1.2, total_kw: 33.3 }, idle_kw: 6.5
+    },
+
+    {
+        id: "MAZAK_VCN410", make: "Mazak", model: "VCN-410A", type: "VMC", origin: "Japan", city: "Oguchi, Aichi",
+        popular: "Precision auto suppliers — Pimpri-Chinchwad MIDC", spindle_rpm: 12000, x_travel: 410, y_travel: 460, z_travel: 510,
+        rated_current_A: 52, claimed: { spindle_kw: 15.0, x_axis_kw: 2.0, y_axis_kw: 1.8, z_axis_kw: 1.5, coolant_kw: 1.5, atc_kw: 1.0, aux_kw: 0.8, total_kw: 23.6 }, idle_kw: 4.5
+    },
+
+    {
+        id: "DMG_DMC635V", make: "DMG MORI", model: "DMC 635V", type: "VMC", origin: "Germany", city: "Bielefeld",
+        popular: "Pune aerospace & defence, high-end SMEs", spindle_rpm: 14000, x_travel: 635, y_travel: 510, z_travel: 475,
+        rated_current_A: 68, claimed: { spindle_kw: 19.0, x_axis_kw: 2.2, y_axis_kw: 2.0, z_axis_kw: 1.8, coolant_kw: 2.0, atc_kw: 1.5, aux_kw: 1.2, total_kw: 29.7 }, idle_kw: 5.5
+    },
+
+    {
+        id: "FANUC_ROBO", make: "Fanuc", model: "RoboDrill α-D21MiA5", type: "Drill Tap", origin: "Japan", city: "Oshino, Yamanashi",
+        popular: "EV & electronics component SMEs near Pune / Chakan", spindle_rpm: 24000, x_travel: 700, y_travel: 400, z_travel: 330,
+        rated_current_A: 38, claimed: { spindle_kw: 5.5, x_axis_kw: 1.0, y_axis_kw: 0.8, z_axis_kw: 0.8, coolant_kw: 0.55, atc_kw: 0.4, aux_kw: 0.4, total_kw: 9.45 }, idle_kw: 2.0
+    },
+
+    {
+        id: "CUSTOM", make: "Custom / Other", model: "User-defined", type: "VMC", origin: "—", city: "—",
+        popular: "Enter your machine's specifications manually", spindle_rpm: 8000, x_travel: 500, y_travel: 400, z_travel: 400,
+        rated_current_A: 28, claimed: { spindle_kw: 7.5, x_axis_kw: 1.5, y_axis_kw: 1.5, z_axis_kw: 1.5, coolant_kw: 0.5, atc_kw: 0.3, aux_kw: 0.5, total_kw: 13.3 }, idle_kw: 2.5
+    },
+];
+
+// REST: serve catalog to frontend
+app.get('/api/catalog', (_, res) => res.json(MACHINE_CATALOG));
+
+
 const MODE_PROFILES = {
     idle: { spindle: 0.0, x_axis: 0.0, y_axis: 0.0, z_axis: 0.0, coolant: 0.0, atc: 0.0, aux: 1.0 },
     cutting: { spindle: 0.85, x_axis: 0.7, y_axis: 0.6, z_axis: 0.5, coolant: 1.0, atc: 0.0, aux: 1.0 },
@@ -610,6 +709,47 @@ function simulateTick() {
 }
 
 setInterval(simulateTick, TICK_SEC * 1000);
+
+// ─── Socket events ────────────────────────────────────────────────────────────
+const { Server: _S } = require("socket.io");
+io.on("connection", (socket) => {
+    // Send catalog on first connect
+    socket.emit("catalog", MACHINE_CATALOG);
+
+    // configure_machine: { slot: 0|1|2, catalog_id: string, custom?: {...} }
+    socket.on("configure_machine", ({ slot, catalog_id, custom }) => {
+        const m = machineState[slot];
+        if (!m) return;
+
+        const cat = MACHINE_CATALOG.find(c => c.id === catalog_id);
+        if (!cat) return;
+
+        // Apply catalog nameplate specs
+        m.name = custom?.name || `${cat.make} ${cat.model}`;
+        m.make = cat.make;
+        m.model = cat.model;
+        m.rated_current_A = custom?.rated_current_A || cat.rated_current_A;
+        m.idle_kw = cat.idle_kw;
+
+        // Rebuild claimed from catalog + optional component overrides
+        const base = { ...cat.claimed };
+        if (custom?.components) Object.assign(base, custom.components);
+        // Recompute total
+        base.total_kw = ['spindle_kw', 'x_axis_kw', 'y_axis_kw', 'z_axis_kw', 'coolant_kw', 'atc_kw', 'aux_kw']
+            .reduce((s, k) => s + (base[k] || 0), 0);
+        m.claimed = base;
+
+        // Reset energy accumulators when machine changes
+        m.kwh_total = 0;
+        m.cost_total = 0;
+        m.startTime = Date.now();
+        m.history = []; m.history_pf = []; m.history_thd = [];
+        m.history_L1 = []; m.history_L2 = []; m.history_L3 = [];
+
+        console.log(`🔧 VMC-0${slot + 1} reconfigured → ${m.name} (${m.rated_current_A}A)`);
+        simulateTick(); // Push update immediately
+    });
+});
 
 app.get("/", (_, res) => res.json({ status: "AeroPulse CT-Meter Backend Online", system: SYSTEM, ct_spec: CT_SPEC }));
 app.get("/machines", (_, res) => res.json(VMC_MACHINES));
