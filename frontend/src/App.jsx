@@ -180,15 +180,20 @@ function ComponentBarChart({ machine }) {
 // ─── Digital LCD Number ───────────────────────────────────────────────────────
 function LCDValue({ value, unit, label, color = '#22c55e', size = 28 }) {
     return (
-        <div style={{ textAlign: 'center', padding: '8px 12px' }}>
+        <div style={{
+            textAlign: 'center', padding: '10px 14px',
+            background: color + '0d', borderRadius: 10,
+            border: `1px solid ${color}22`,
+            transition: 'background 0.3s'
+        }}>
             <div style={{
                 fontSize: size, fontWeight: 900, fontFamily: 'var(--font-mono)',
-                color, letterSpacing: -1, lineHeight: 1, textShadow: `0 0 20px ${color}55`
+                color, letterSpacing: -1, lineHeight: 1, textShadow: `0 0 18px ${color}44`
             }}>
                 {value}
             </div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{unit}</div>
-            {label && <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1, textTransform: 'uppercase', marginTop: 1 }}>{label}</div>}
+            <div style={{ fontSize: 10.5, color: '#64748b', marginTop: 3, fontWeight: 500 }}>{unit}</div>
+            {label && <div style={{ fontSize: 8.5, color, letterSpacing: 0.9, textTransform: 'uppercase', marginTop: 2, fontWeight: 700, opacity: 0.8 }}>{label}</div>}
         </div>
     )
 }
@@ -199,20 +204,31 @@ function PhaseBar({ phase, current, voltage, rated }) {
     const color = PHASE_COLORS[phase]
     const warning = pct > 85
     return (
-        <div style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4, alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 20, height: 20, borderRadius: '50%', background: color + '22', border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color }}>{phase}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color, fontSize: 15, fontWeight: 800 }}>{fmt(current, 1)} A</span>
-                    {warning && <span style={{ fontSize: 9, background: '#ef444422', color: '#ef4444', padding: '1px 5px', borderRadius: 8, fontWeight: 700 }}>HIGH</span>}
+        <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 5, alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{
+                        width: 24, height: 24, borderRadius: '50%',
+                        background: color + '18', border: `2px solid ${color}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 9, fontWeight: 900, color, flexShrink: 0
+                    }}>{phase}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color, fontSize: 16, fontWeight: 800 }}>{fmt(current, 1)} A</span>
+                    {warning && <span style={{ fontSize: 8.5, background: '#ef444420', color: '#ef4444', padding: '2px 7px', borderRadius: 10, fontWeight: 800, border: '1px solid #ef444444' }}>⚠ HIGH</span>}
                 </div>
-                <span style={{ color: '#64748b', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{fmt(voltage, 1)} V</span>
+                <div style={{ display: 'flex', flex: 'column', alignItems: 'flex-end', gap: 1 }}>
+                    <span style={{ color: '#475569', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600 }}>{fmt(voltage, 1)} V</span>
+                    <span style={{ fontSize: 9, color: '#94a3b8' }}>{fmt(pct, 0)}% of rated</span>
+                </div>
             </div>
-            <div style={{ height: 6, background: '#EEF2FF', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: 9, background: '#EEF2FF', borderRadius: 10, overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)' }}>
                 <div style={{
-                    height: '100%', width: `${pct}%`, background: warning ? '#ef4444' : color,
-                    borderRadius: 3, transition: 'width 0.4s ease',
-                    boxShadow: warning ? `0 0 8px #ef4444` : `0 0 6px ${color}88`
+                    height: '100%', width: `${pct}%`,
+                    background: warning
+                        ? 'linear-gradient(90deg, #f97316, #ef4444)'
+                        : `linear-gradient(90deg, ${color}cc, ${color})`,
+                    borderRadius: 10, transition: 'width 0.45s ease',
+                    boxShadow: warning ? `0 0 10px #ef444488` : `0 0 8px ${color}66`
                 }} />
             </div>
         </div>
@@ -264,20 +280,31 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
     const custom_m = catalog.filter(c => c.origin === '—')
 
     return (
-        <div className="machine-panel" style={{ padding: '14px 18px' }}>
+        <div className="machine-panel" style={{ padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>🏭 Machine Configurator</div>
-                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
-                        Select from catalog or enter custom specifications
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
+                    }}>🏭</div>
+                    <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>Machine Configurator</div>
+                        <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>
+                            Select from catalog or enter custom specifications
+                        </div>
                     </div>
                 </div>
                 <button onClick={() => setOpen(o => !o)} style={{
-                    background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff',
-                    border: 'none', borderRadius: 20, padding: '5px 16px', fontSize: 11,
-                    fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(99,102,241,0.35)'
+                    background: open ? 'linear-gradient(135deg,#e0e7ff,#ede9fe)' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                    color: open ? '#4338ca' : '#fff',
+                    border: open ? '1.5px solid #c7d2fe' : 'none',
+                    borderRadius: 20, padding: '6px 18px', fontSize: 11,
+                    fontWeight: 700, cursor: 'pointer',
+                    boxShadow: open ? 'none' : '0 2px 12px rgba(99,102,241,0.38)',
+                    transition: 'all 0.2s'
                 }}>
-                    {open ? '▲ Close' : '⚙ Configure'}
+                    {open ? '✕ Close' : '⚙ Configure'}
                 </button>
             </div>
 
@@ -296,8 +323,14 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
 
                     {/* ── Step 1: Catalog Dropdown ── */}
                     <div>
-                        <div style={{ fontSize: 9, color: '#6366F1', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
-                            STEP 1 — SELECT MACHINE FROM CATALOG
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <div style={{
+                                width: 22, height: 22, borderRadius: '50%',
+                                background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 11, fontWeight: 900, color: '#fff', flexShrink: 0
+                            }}>1</div>
+                            <div style={{ fontSize: 10, color: '#6366F1', fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase' }}>Select Machine from Catalog</div>
                         </div>
                         <select value={catId} onChange={e => { setCatId(e.target.value); setCustom({}) }} style={{
                             width: '100%', padding: '8px 12px', borderRadius: 10, border: '1.5px solid #C7D2FE',
@@ -349,9 +382,15 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
                     {/* ── Step 2: Input Mode ── */}
                     {selected && (
                         <div>
-                            <div style={{ height: 1, background: '#E0E7FF', marginBottom: 14 }} />
-                            <div style={{ fontSize: 9, color: '#10B981', fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>
-                                STEP 2 — INPUT MODE
+                            <hr className="divider" />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                <div style={{
+                                    width: 22, height: 22, borderRadius: '50%',
+                                    background: 'linear-gradient(135deg,#10B981,#34D399)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 11, fontWeight: 900, color: '#fff', flexShrink: 0
+                                }}>2</div>
+                                <div style={{ fontSize: 10, color: '#10B981', fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase' }}>Choose Input Mode</div>
                             </div>
 
                             {/* Auto / Manual toggle */}
@@ -1063,36 +1102,95 @@ function SidebarCard({ machine, selected, onClick }) {
     const severity = pct > 90 ? 'red' : pct > 50 ? 'yellow' : 'green'
     const color = { red: '#ef4444', yellow: '#eab308', green: '#22c55e' }[severity]
     const modeInfo = MODE_LABELS[machine.mode] || { label: machine.mode, color: '#64748b' }
+    const avgCurrent = ct ? (ct.phase_current.L1 + ct.phase_current.L2 + ct.phase_current.L3) / 3 : 0
 
     return (
         <div className={`machine-card ${severity}`} onClick={onClick}
-            style={{ cursor: 'pointer', outline: selected ? `2px solid ${color}` : 'none', outlineOffset: 1 }}>
+            style={{
+                cursor: 'pointer',
+                outline: selected ? `2.5px solid ${color}` : 'none',
+                outlineOffset: 2,
+                boxShadow: selected ? `0 0 0 3px ${color}22, 0 4px 20px ${color}28` : undefined
+            }}>
             <div className="machine-header">
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="machine-name">{machine.name}</div>
-                    <div className="machine-id">{machine.id} · {machine.year}</div>
+                    <div className="machine-id" style={{ marginTop: 2 }}>
+                        {machine.make} {machine.model} · {machine.year}
+                    </div>
                 </div>
-                <div className={`severity-badge ${severity}`}>{pct > 90 ? 'HIGH' : pct > 50 ? 'ACTIVE' : 'IDLE'}</div>
+                <div className={`severity-badge ${severity}`}>{pct > 90 ? '⚡ HIGH' : pct > 50 ? '● ACTIVE' : '○ IDLE'}</div>
             </div>
+
+            {/* Mode indicator row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: modeInfo.color, boxShadow: `0 0 6px ${modeInfo.color}`,
+                    animation: machine.mode === 'cutting' ? 'pulse-dot 1s infinite' : 'none'
+                }} />
+                <span style={{ fontSize: 9.5, color: modeInfo.color, fontWeight: 700, letterSpacing: 0.4 }}>{modeInfo.label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 9.5, color: '#eab308', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>₹{fmt(machine.cost_total, 1)}</span>
+            </div>
+
             <div className="machine-metrics">
-                <div className="metric"><span className="metric-label">kW (Actual)</span>
-                    <span className="metric-value" style={{ color }}>{fmt(machine.actual_total_kw, 1)}</span></div>
-                <div className="metric"><span className="metric-label">Avg. Current</span>
-                    <span className="metric-value">{ct ? fmt((ct.phase_current.L1 + ct.phase_current.L2 + ct.phase_current.L3) / 3, 1) : '--'} A</span></div>
-                <div className="metric"><span className="metric-label">Power Factor</span>
-                    <span className="metric-value">{ct ? fmt(ct.power_factor, 2) : '--'}</span></div>
-                <div className="metric"><span className="metric-label">kWh Total</span>
-                    <span className="metric-value" style={{ color: '#22c55e' }}>{fmt(machine.kwh_total, 3)}</span></div>
+                <div className="metric">
+                    <span className="metric-label">⚡ kW Actual</span>
+                    <span className="metric-value" style={{ color }}>{fmt(machine.actual_total_kw, 2)}</span>
+                </div>
+                <div className="metric">
+                    <span className="metric-label">⚡ Avg Current</span>
+                    <span className="metric-value">{avgCurrent > 0 ? fmt(avgCurrent, 1) : '--'} A</span>
+                </div>
+                <div className="metric">
+                    <span className="metric-label">🔋 Power Factor</span>
+                    <span className="metric-value" style={{ color: ct?.power_factor > 0.9 ? '#22c55e' : ct?.power_factor > 0.8 ? '#eab308' : '#ef4444' }}>
+                        {ct ? fmt(ct.power_factor, 2) : '--'}
+                    </span>
+                </div>
+                <div className="metric">
+                    <span className="metric-label">📊 kWh Total</span>
+                    <span className="metric-value" style={{ color: '#22c55e' }}>{fmt(machine.kwh_total, 3)}</span>
+                </div>
             </div>
-            <div className="power-bar-wrap" style={{ marginTop: 8 }}>
+
+            <div className="power-bar-wrap" style={{ marginTop: 9 }}>
                 <div className="power-bar-label">
-                    <span style={{ color: modeInfo.color, fontSize: 9, fontWeight: 700 }}>● {modeInfo.label}</span>
-                    <span style={{ color: '#eab308', fontSize: 9 }}>₹{fmt(machine.cost_total, 1)}</span>
+                    <span style={{ color: '#64748b', fontSize: 9 }}>{fmt(machine.actual_total_kw, 1)} / {fmt(machine.claimed_total_kw, 1)} kW</span>
+                    <span style={{ color: color, fontSize: 9, fontWeight: 800 }}>{fmt(pct, 0)}%</span>
                 </div>
                 <div className="power-bar-track">
-                    <div className="power-bar-fill" style={{ width: `${pct}%`, background: color }} />
+                    <div className="power-bar-fill" style={{
+                        width: `${pct}%`,
+                        background: color === '#22c55e'
+                            ? 'linear-gradient(90deg,#10b981,#34d399)'
+                            : color === '#eab308'
+                                ? 'linear-gradient(90deg,#f59e0b,#fbbf24)'
+                                : 'linear-gradient(90deg,#ef4444,#f87171)',
+                        boxShadow: `0 0 6px ${color}66`
+                    }} />
                 </div>
             </div>
+
+            {/* Mini sparkline if history data available */}
+            {machine.history && machine.history.length > 2 && (() => {
+                const h = machine.history
+                const max = Math.max(...h, 0.1)
+                const w = 100, ht = 20, pad = 1
+                const pts = h.map((v, i) => {
+                    const x = pad + (i / (h.length - 1)) * (w - pad * 2)
+                    const y = ht - pad - ((v / max) * (ht - pad * 2))
+                    return `${x.toFixed(1)},${y.toFixed(1)}`
+                }).join(' ')
+                return (
+                    <div style={{ marginTop: 7 }}>
+                        <div style={{ fontSize: 8.5, color: '#94a3b8', marginBottom: 2 }}>Power trend — last 60s</div>
+                        <svg width="100%" height={ht} viewBox={`0 0 ${w} ${ht}`}>
+                            <polyline fill="none" stroke={color} strokeWidth="1.5" points={pts} strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+                        </svg>
+                    </div>
+                )
+            })()}
         </div>
     )
 }
@@ -1104,37 +1202,28 @@ function SummaryBar({ machines }) {
     const tKwh = machines.reduce((s, m) => s + m.kwh_total, 0)
     const tCost = machines.reduce((s, m) => s + m.cost_total, 0)
     const avgPF = machines.reduce((s, m) => s + (m.ct_meter?.power_factor || 0), 0) / machines.length
+    const pfColor = avgPF > 0.9 ? '#22c55e' : avgPF > 0.8 ? '#eab308' : '#ef4444'
+    const items = [
+        { label: 'Actual Load', icon: '⚡', value: fmt(tAct, 2), unit: 'kW', color: '#3b82f6' },
+        { label: 'Named Plate', icon: '📋', value: fmt(tClaim, 2), unit: 'kW', color: '#6366F1' },
+        { label: 'Load Factor', icon: '📊', value: fmt(tAct / tClaim * 100, 1), unit: '%', color: tAct / tClaim > 0.9 ? '#ef4444' : '#22c55e' },
+        { label: 'Avg Power Factor', icon: '🔋', value: fmt(avgPF, 3), unit: 'PF', color: pfColor },
+        { label: 'Session Energy', icon: '💡', value: fmt(tKwh, 3), unit: 'kWh', color: '#22c55e' },
+        { label: 'Session Cost', icon: '💰', value: `₹${fmt(tCost, 2)}`, unit: 'INR', color: '#eab308' },
+    ]
     return (
         <div className="summary-bar">
-            <div className="summary-item">
-                <div className="summary-label">Total Actual Load</div>
-                <div className="summary-value" style={{ color: '#3b82f6' }}>{fmt(tAct, 2)} <span className="stat-unit">kW</span></div>
-            </div>
-            <div className="summary-divider" />
-            <div className="summary-item">
-                <div className="summary-label">Total Claimed</div>
-                <div className="summary-value">{fmt(tClaim, 2)} <span className="stat-unit">kW</span></div>
-            </div>
-            <div className="summary-divider" />
-            <div className="summary-item">
-                <div className="summary-label">Load Factor</div>
-                <div className="summary-value" style={{ color: '#22c55e' }}>{fmt(tAct / tClaim * 100, 1)}<span className="stat-unit">%</span></div>
-            </div>
-            <div className="summary-divider" />
-            <div className="summary-item">
-                <div className="summary-label">Avg. Power Factor</div>
-                <div className="summary-value" style={{ color: avgPF > 0.9 ? '#22c55e' : avgPF > 0.8 ? '#eab308' : '#ef4444' }}>{fmt(avgPF, 3)}</div>
-            </div>
-            <div className="summary-divider" />
-            <div className="summary-item">
-                <div className="summary-label">Total Energy (Session)</div>
-                <div className="summary-value" style={{ color: '#22c55e' }}>{fmt(tKwh, 3)} <span className="stat-unit">kWh</span></div>
-            </div>
-            <div className="summary-divider" />
-            <div className="summary-item">
-                <div className="summary-label">Session Cost</div>
-                <div className="summary-value" style={{ color: '#eab308' }}>₹{fmt(tCost, 2)}</div>
-            </div>
+            {items.map((item, i) => (
+                <div key={item.label} className="summary-item">
+                    <div className="summary-label">
+                        <span>{item.icon}</span>
+                        {item.label}
+                    </div>
+                    <div className="summary-value" style={{ color: item.color }}>
+                        {item.value} <span className="stat-unit" style={{ fontSize: 11, color: '#94a3b8' }}>{item.unit}</span>
+                    </div>
+                </div>
+            ))}
         </div>
     )
 }
@@ -1166,36 +1255,63 @@ export default function App() {
                 <div className="header-brand">
                     <div className="brand-icon">⚡</div>
                     <div>
-                        <div className="brand-name">AeroPulse – VMC Energy Monitor</div>
-                        <div className="brand-tagline">CT Clamp · Real-time 3-Phase Power · VFD + IE Optimizer · 24/7 kWh Accumulator</div>
+                        <div className="brand-name">Navonmesh MechaVision</div>
+                        <div className="brand-tagline">AeroPulse · CT Clamp · 3-Phase Power Monitor · VFD + IE Optimizer · 24/7 kWh Accumulator</div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div className="header-status">
-                        <div className="status-dot" style={{ background: connected ? '#22c55e' : '#ef4444', boxShadow: `0 0 8px ${connected ? '#22c55e' : '#ef4444'}` }} />
-                        {connected ? 'Live CT Meter Active' : 'Connecting…'}
+                        <div className="status-dot" style={{
+                            background: connected ? '#A7F3D0' : '#FCA5A5',
+                            boxShadow: `0 0 8px ${connected ? '#6EE7B7' : '#F87171'}`
+                        }} />
+                        {connected ? 'Live · CT Meters Active' : 'Connecting…'}
+                    </div>
+                    <div style={{
+                        background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '3px 10px',
+                        fontSize: 9, color: 'rgba(255,255,255,0.7)', fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.18)'
+                    }}>
+                        {machines.length} Machine{machines.length !== 1 ? 's' : ''} Online
                     </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <div className="header-time">{time.toLocaleTimeString('en-IN', { hour12: false })}</div>
-                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)' }}>{time.toLocaleDateString('en-IN')}</div>
+                    <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{time.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}</div>
                 </div>
             </header>
 
             {machines.length > 0 && <SummaryBar machines={machines} />}
 
-            <div className="main" style={{ gridTemplateColumns: '270px 1fr' }}>
+            <div className="main">
                 <aside className="sidebar">
                     <div className="sidebar-section-title">VMC Machines — CT Meters</div>
                     {machines.length === 0
-                        ? <div className="loader" style={{ height: 180 }}><div className="spinner" /><span>Connecting CT meters…</span></div>
+                        ? (
+                            <div className="loader" style={{ height: 180 }}>
+                                <div className="spinner" />
+                                <span style={{ fontSize: 12, color: '#6366F1', fontWeight: 600 }}>Connecting CT meters…</span>
+                            </div>
+                        )
                         : machines.map((m, i) => <SidebarCard key={m.id} machine={m} selected={selected === i} onClick={() => setSelected(i)} />)
                     }
                 </aside>
 
-                <section className="viewport" style={{ overflowY: 'auto', padding: '16px 20px' }}>
+                <section className="viewport">
                     {!sm
-                        ? <div className="loader"><div className="spinner" /><span>Waiting for CT readings…</span></div>
+                        ? (
+                            <div className="loader">
+                                <div style={{
+                                    width: 52, height: 52, borderRadius: 14,
+                                    background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 26, boxShadow: '0 4px 20px rgba(99,102,241,0.35)',
+                                    animation: 'pulse-dot 2s infinite'
+                                }}>⚡</div>
+                                <div style={{ fontSize: 14, color: '#6366F1', fontWeight: 700, marginTop: 4 }}>Navonmesh MechaVision</div>
+                                <div style={{ fontSize: 12, color: '#94a3b8' }}>Waiting for CT meter readings…</div>
+                            </div>
+                        )
                         : <>
                             {catalog.length > 0 && (
                                 <MachineSetupPanel
