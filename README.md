@@ -1,70 +1,83 @@
-# ColorPilot Edge Dashboard
+# AeroPulse: Drone-Based Energy Intelligence
 
-**System: Autonomous Energy Orchestration via Chromatic Entropy Mapping**
+**AeroPulse** is an Industry 4.0 energy intelligence platform that deploys autonomous micro-drones inside factories (GPS-denied environments). Using SLAM navigation, thermal imaging, acoustic frequency analysis, and physics-based modeling, the system identifies energy waste and visualizes it in a real-time 3D digital twin dashboard.
 
-## 1. Vision Statement
-ColorPilot transforms the "invisible" problem of manufacturing energy waste into a real-time, color-coded orchestration system. By combining Acoustic Entropy edge sensing with a decentralized packet-bidding protocol, ColorPilot allows factories to autonomously balance power loads.
-
-## 2. The Problem: "The Grey Factory"
-**Inefficient Energy Utilization in Manufacturing Operations**: Manufacturing industries are among the largest consumers of electricity and thermal energy. However, many facilities lack real-time visibility into energy consumption patterns across machines, production lines, and operational cycles. 
-
-Legacy factories operate with a lack of data visibility where:
-- **Standby Power** accounts for 30% of costs but remains unmeasured.
-- **Peak Demand** spikes trigger massive utility penalties.
-- **Mechanical Friction** (energy lost as heat/sound) is silent until total machine failure.
-
-## 3. The ColorPilot Solution
-We replace standard monitoring with **Chromatic Intelligence** and **Edge Autonomy**.
-
-### A. The "Thermal-Acoustic" Spectrum
-Instead of invasive wiring, non-intrusive MEMS sensors monitor a machine’s harmonic signature via Edge AI.
-- **Green Pulse**: Optimal state; minimum entropy.
-- **Yellow Shift**: Friction detected (kinetic energy bleeding into sound).
-- **Red Alert**: High-Entropy waste; autonomous throttling engaged.
-
-### B. Packetized Power Orchestration
-Machines do not just draw power; they "bid" for it using a Token Bucket algorithm. If total factory load nears a peak threshold, non-essential machines are micro-delayed by milliseconds to "shave" the peak demand.
-
-## 4. Technical Architecture
-Our rapid prototype was orchestrated using Google Antigravity, allowing autonomous AI agents to build and verify our full-stack solution in record time.
-
-| Component | Technology | Role |
-| :--- | :--- | :--- |
-| **Edge Nodes (Simulated)** | Node.js / MQTT | Generates real-time acoustic & amperage data. |
-| **Control Logic** | Node Token-Bucket Script | Decentralized bidding & peak-load buffering. |
-| **Frontend Twin** | Next.js + Tailwind (shadcn/ui) | The visual "ColorPilot" dashboard. |
-| **DevOps** | Google Antigravity | Autonomous code generation and browser validation. |
-
-## 5. Mathematical Optimization
-The ColorPilot Efficiency Index (&chi;) is calculated by the ratio of "Work-Producing" energy to "Entropy-Generating" energy:
-
-&chi; = E_work / (E_total + (S_entropy * k))
-
-Where:
-- **E_work** = Useful mechanical output.
-- **S_entropy** = Measured Acoustic waste.
-- **k** = The "Color Scaling" factor for real-time UI alerts.
+It transforms traditional annual energy audits into **Continuous Spatial Auditing**.
 
 ---
 
-## Agent Configuration (`agent.yaml`)
-If you are setting up a structured multi-agent workspace in Antigravity, create a file named `agent.yaml` in your root directory and use this configuration:
+## 2️⃣ Problem Statement
+Industrial facilities face:
+- Lack of real-time energy visibility
+- Hidden thermal & mechanical losses
+- Manual, costly annual audits
+- No spatial monitoring of energy flow
+- High electricity bills
+- ESG compliance pressure
 
-```yaml
-name: ColorPilot-Orchestrator
-description: "Master agent for building the ColorPilot Energy Swarm project."
-model: "gemini-3.1-pro"
+## 3️⃣ Proposed Solution
+AeroPulse deploys a coordinated drone swarm that:
+- Navigates using SLAM (no GPS required)
+- Captures thermal data via IR sensors
+- Captures high-frequency acoustic anomalies via MEMS microphones
+- Applies a physics engine to calculate real power loss
+- Streams data into a 3D Digital Twin (ColorPilot UI)
 
-sub_agents:
-  - name: BackendIoT
-    role: "Simulate edge node data and MQTT broker logic."
-    tools: ["terminal", "code_editor"]
-  
-  - name: FrontendUI
-    role: "Build the React/Tailwind dashboard for the Chromatic Twin."
-    tools: ["code_editor", "browser"]
-    
-  - name: QATester
-    role: "Verify that the Chromatic Twin changes from Green to Red when entropy spikes."
-    tools: ["browser"]
-```
+## 4️⃣ System Architecture
+
+### 🔹 Layer 1 – Physical Layer
+- **SLAM (Simultaneous Localization and Mapping)**
+- LiDAR / Optical flow sensors
+- Landmark-based localization
+- Autonomous grid sweeping patrol
+- Auto-docking charging station
+
+### 🔹 Layer 2 – Sensor Fusion Pipeline
+**A. Acoustic Pipeline**
+- MEMS microphone array
+- Real-time FFT processing
+- Detect ultrasonic friction / air leaks
+- Frequency-based anomaly detection
+
+**B. Thermal Pipeline**
+- Infrared surface temperature mapping
+- Baseline vs live delta detection
+- Power loss calculation using Stefan-Boltzmann law:
+  `P_loss = εσA(T_surf^4 - T_ambient^4)`
+
+### 🔹 Layer 3 – Microservices Architecture
+- **Service 1 – Telemetry Broker**: Node.js MQTT broker. Receives drone telemetry (x, y, z, temp, acoustic hertz).
+- **Service 2 – Analytics Engine**: Python + Pandas. Calculates energy anomalies and kW cost estimation.
+- **Service 3 – ColorPilot UI**: React + Three.js. Real-time WebSocket updates to render a 3D factory. Color codes (Green → Efficient, Yellow → Moderate Loss, Red → Critical Waste).
+
+---
+
+## 5️⃣ Development Roadmap
+**Phase 1 (Weeks 1–3)**
+- 3D factory model, static heat mapping, and simulated drones.
+
+**Phase 2 (Weeks 4–6)**
+- Node.js MQTT broker, Drone telemetry simulator, and JSON streaming.
+
+**Phase 3 (Weeks 7–9)**
+- FFT acoustic processing, thermal power loss engine, and baseline anomaly detection.
+
+**Phase 4 (Weeks 10–13)**
+- React + Three.js dashboard, 3D live updates, and energy loss counters.
+
+**Phase 5 (Weeks 14–16)**
+- Predictive analytics, AI anomaly classification, and Maintenance recommendation engines.
+
+## 6️⃣ Key Performance Indicators (KPIs)
+- % Energy Waste Reduction
+- Real-time anomaly detection latency (<5 sec)
+- Spatial coverage accuracy (>95%)
+- ROI payback period (<12 months)
+- False positive rate (<10%)
+
+## 7️⃣ Competitive Positioning
+Compared to platforms like Siemens (MindSphere), Honeywell (Forge), and General Electric (Predix), AeroPulse differentiates through:
+- Drone-based mobile sensing
+- No machine retrofitting needed
+- Spatial 3D visualization
+- Continuous auditing model
