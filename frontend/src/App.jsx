@@ -43,6 +43,140 @@ function Sparkline({ data, color, max }) {
     )
 }
 
+// ─── Multi-Line Chart ─────────────────────────────────────────────────────────
+let _chartId = 0
+function MultiLineChart({ series, height = 140, title }) {
+    const [cid] = useState(() => `mc_${_chartId++}`)
+    const W = 600, H = height, padL = 40, padR = 12, padT = 12, padB = 28
+    const chartW = W - padL - padR, chartH = H - padT - padB
+    const ticks = 5
+    const normalized = series.map(s => {
+        const data = s.data || []
+        const max = Math.max(...data, s.max || 1)
+        const pts = data.map((v, i) => {
+            const x = padL + (i / Math.max(data.length - 1, 1)) * chartW
+            const y = padT + chartH - ((v / (max || 1)) * chartH)
+            return `${x.toFixed(1)},${y.toFixed(1)}`
+        }).join(' ')
+        return { ...s, pts, max, data }
+    })
+    const primary = normalized[0] || { max: 1, data: [] }
+    return (
+        <div>
+            {title && <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1, marginBottom: 6 }}>{title}</div>}
+            <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+                <defs>
+                    {normalized.map(s => (
+                        <linearGradient key={s.key + cid} id={s.key + cid} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
+                            <stop offset="100%" stopColor={s.color} stopOpacity="0" />
+                        </linearGradient>
+                    ))}
+                </defs>
+                {Array.from({ length: ticks + 1 }, (_, i) => {
+                    const y = padT + (i / ticks) * chartH
+                    const val = primary.max - (i / ticks) * primary.max
+                    return (
+                        <g key={i}>
+                            <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                            <text x={padL - 5} y={y + 4} textAnchor="end" fontSize="8" fill="#475569">{val.toFixed(1)}</text>
+                        </g>
+                    )
+                })}
+                {[0, 15, 30, 45, 59].map(i => (
+                    <text key={i} x={padL + (i / 59) * chartW} y={H - 4} textAnchor="middle" fontSize="8" fill="#334155">-{59 - i}s</text>
+                ))}
+                <rect x={padL} y={padT} width={chartW} height={chartH} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" rx="2" />
+                {normalized.map(s => {
+                    if (!s.pts || s.data.length < 2) return null
+                    const lastPt = s.pts.split(' ').slice(-1)[0].split(',')
+                    return (
+                        <g key={s.key}>
+                            <polygon fill={`url(#${s.key + cid})`}
+                                points={`${padL},${padT + chartH} ${s.pts} ${W - padR},${padT + chartH}`} />
+                            <polyline fill="none" stroke={s.color} strokeWidth="1.8" points={s.pts}
+                                strokeLinecap="round" strokeLinejoin="round" />
+                            {lastPt.length === 2 && (
+                                <circle cx={+lastPt[0]} cy={+lastPt[1]} r="3"
+                                    fill={s.color} stroke="#111827" strokeWidth="1.5" />
+                            )}
+                        </g>
+                    )
+                })}
+            </svg>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+                {series.map(s => (
+                    <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10 }}>
+                        <div style={{ width: 20, height: 2, background: s.color, borderRadius: 1 }} />
+                        <span style={{ color: '#64748b' }}>{s.label}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', color: s.color, fontWeight: 700 }}>
+                            {s.data?.length > 0 ? s.data[s.data.length - 1]?.toFixed(s.decimals ?? 2) : '--'}
+                        </span>
+                        <span style={{ color: '#334155' }}>{s.unit}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+// ─── Component Bar Chart ──────────────────────────────────────────────────────
+function ComponentBarChart({ machine }) {
+    const COMPS = [
+        { key: 'spindle_kw', label: '⚙ Spindle', ie: machine.currentMotorClass?.spindle },
+        { key: 'x_axis_kw', label: '↔ X-Axis', ie: machine.currentMotorClass?.x_axis },
+        { key: 'y_axis_kw', label: '↕ Y-Axis', ie: machine.currentMotorClass?.y_axis },
+        { key: 'z_axis_kw', label: '↗ Z-Axis', ie: machine.currentMotorClass?.z_axis },
+        { key: 'coolant_kw', label: '💧 Coolant', ie: machine.currentMotorClass?.coolant },
+        { key: 'atc_kw', label: '🔧 ATC', ie: machine.currentMotorClass?.atc },
+        { key: 'aux_kw', label: '💡 Aux', ie: machine.currentMotorClass?.aux },
+    ]
+    const IE_COL = { IE1: '#ef4444', IE2: '#eab308', IE3: '#3b82f6', IE4: '#22c55e', IE5: '#a855f7' }
+    const maxKw = Math.max(...COMPS.map(c => machine.claimed?.[c.key] || 0), 0.1)
+    return (
+        <div>
+            <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1, marginBottom: 10 }}>
+                COMPONENT BREAKDOWN — ACTUAL vs CLAIMED (kW)
+            </div>
+            {COMPS.map(c => {
+                const actual = machine.actual?.[c.key] || 0
+                const claimed = machine.claimed?.[c.key] || 0
+                const pctA = Math.min(100, (actual / maxKw) * 100)
+                const pctC = Math.min(100, (claimed / maxKw) * 100)
+                const load = claimed > 0 ? (actual / claimed) * 100 : 0
+                const col = load > 90 ? '#ef4444' : load > 50 ? '#3b82f6' : '#22c55e'
+                const ieCol = IE_COL[c.ie] || '#64748b'
+                return (
+                    <div key={c.key} style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 3 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <span style={{ color: '#94a3b8' }}>{c.label}</span>
+                                {c.ie && <span style={{ fontSize: 8, background: ieCol + '22', color: ieCol, padding: '0 4px', borderRadius: 6, fontWeight: 700 }}>{c.ie}</span>}
+                            </div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                                <span style={{ color: col, fontWeight: 700 }}>{fmt(actual, 2)}</span>
+                                <span style={{ color: '#334155' }}> / {fmt(claimed, 2)} kW</span>
+                                <span style={{ color: '#475569', marginLeft: 5 }}>({fmt(load, 0)}%)</span>
+                            </div>
+                        </div>
+                        <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+                            <div style={{
+                                position: 'absolute', left: 0, top: 0, height: '100%',
+                                width: `${pctC}%`, background: 'rgba(255,255,255,0.08)', borderRadius: 4
+                            }} />
+                            <div style={{
+                                position: 'absolute', left: 0, top: 0, height: '100%',
+                                width: `${pctA}%`, background: col, borderRadius: 4,
+                                transition: 'width 0.4s ease', boxShadow: `0 0 5px ${col}88`
+                            }} />
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
 // ─── Digital LCD Number ───────────────────────────────────────────────────────
 function LCDValue({ value, unit, label, color = '#22c55e', size = 28 }) {
     return (
@@ -211,8 +345,66 @@ function CTMeterPanel({ machine }) {
                     )
                 })}
             </div>
+            {/* ── Detailed Analytics Charts ─────────────────────────────── */}
+            <div className="machine-panel" style={{ padding: '14px 18px' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>📊 Detailed Analytics — Last 60 Seconds</div>
+
+                {/* Chart 1: Power + PF + THD Multi-line */}
+                <div style={{ marginBottom: 20 }}>
+                    <MultiLineChart
+                        title="POWER TREND · POWER FACTOR (×20) · THD (%)"
+                        height={140}
+                        series={[
+                            {
+                                key: 'kw', label: 'Real Power', unit: 'kW', color: '#3b82f6', decimals: 2,
+                                data: machine.history || [], max: machine.claimed_total_kw * 1.2
+                            },
+                            {
+                                key: 'pf', label: 'PF ×20', unit: '', color: '#22c55e', decimals: 3,
+                                data: (machine.history_pf || []).map(v => v * 20), max: 20
+                            },
+                            {
+                                key: 'thd', label: 'THD', unit: '%', color: '#f97316', decimals: 2,
+                                data: machine.history_thd || [], max: 10
+                            },
+                        ]}
+                    />
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 18px' }} />
+
+                {/* Chart 2: 3-Phase Current History */}
+                <div style={{ marginBottom: 20 }}>
+                    <MultiLineChart
+                        title="3-PHASE CURRENT HISTORY (A) — L1 · L2 · L3"
+                        height={120}
+                        series={[
+                            {
+                                key: 'L1', label: 'L1', unit: 'A', color: '#ef4444', decimals: 1,
+                                data: machine.history_L1 || [], max: machine.rated_current_A * 1.2
+                            },
+                            {
+                                key: 'L2', label: 'L2', unit: 'A', color: '#eab308', decimals: 1,
+                                data: machine.history_L2 || [], max: machine.rated_current_A * 1.2
+                            },
+                            {
+                                key: 'L3', label: 'L3', unit: 'A', color: '#22c55e', decimals: 1,
+                                data: machine.history_L3 || [], max: machine.rated_current_A * 1.2
+                            },
+                        ]}
+                    />
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 18px' }} />
+
+                {/* Chart 3: Component bar breakdown */}
+                <ComponentBarChart machine={machine} />
+            </div>
 
             {/* Upgrade Optimizer */}
+
             <div className="machine-panel" style={{ padding: '14px 18px' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚡ VFD + IE Motor Upgrade Optimizer</div>
                 <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>Compare energy savings for each upgrade scenario. Based on ₹7.5/kWh · 6000 hrs/yr.</div>

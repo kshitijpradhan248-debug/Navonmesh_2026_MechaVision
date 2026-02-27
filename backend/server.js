@@ -83,9 +83,14 @@ const machineState = VMC_MACHINES.map((m, i) => ({
     ...m,
     mode: "idle", modeTick: 0, modeDuration: 4 + Math.floor(Math.random() * 10),
     modeIdx: [0, 3, 6][i],
-    history: [],
-    kwh_total: 0,        // Accumulated energy (kWh) since startup
-    cost_total: 0,        // Accumulated cost (₹) since startup
+    history: [],   // kW history
+    history_pf: [],   // power factor history
+    history_thd: [],   // THD history
+    history_L1: [],   // phase L1 current history
+    history_L2: [],   // phase L2 current history
+    history_L3: [],   // phase L3 current history
+    kwh_total: 0,
+    cost_total: 0,
     startTime: Date.now(),
 }));
 
@@ -465,8 +470,14 @@ function simulateTick() {
         const discom = calcDISCOMPenalty(ct, m.kwh_total);
         const pqa = powerQualityAnalyzer(ct, m.rated_current_A, claimed_total_kw, m.kwh_total);
 
-        m.history.push(actual_total_kw);
-        if (m.history.length > 60) m.history.shift();
+        // Update all history buffers (60-point rolling window)
+        const push60 = (arr, val) => { arr.push(+val.toFixed(3)); if (arr.length > 60) arr.shift(); };
+        push60(m.history, actual_total_kw);
+        push60(m.history_pf, ct.power_factor);
+        push60(m.history_thd, ct.thd_pct);
+        push60(m.history_L1, ct.phase_current.L1);
+        push60(m.history_L2, ct.phase_current.L2);
+        push60(m.history_L3, ct.phase_current.L3);
 
         const uptimeMs = Date.now() - m.startTime;
 
@@ -480,16 +491,18 @@ function simulateTick() {
             claimed: c, actual,
             currentMotorClass: m.currentMotorClass,
             hasVFD: m.hasVFD,
-            ct_meter: ct,                           // Live CT clamp readings
-            kwh_total: +m.kwh_total.toFixed(4),      // 24/7 energy accumulator
-            cost_total: +m.cost_total.toFixed(2),    // 24/7 cost accumulator
+            ct_meter: ct,
+            kwh_total: +m.kwh_total.toFixed(4),
+            cost_total: +m.cost_total.toFixed(2),
             uptime_ms: uptimeMs,
-            savings,
-            anomalies,
-            co2,
-            discom,
-            pqa,                                     // ← Power Quality Analyzer
+            savings, anomalies, co2, discom, pqa,
+            // ─ Graph histories ─
             history: [...m.history],
+            history_pf: [...m.history_pf],
+            history_thd: [...m.history_thd],
+            history_L1: [...m.history_L1],
+            history_L2: [...m.history_L2],
+            history_L3: [...m.history_L3],
         };
     });
 
