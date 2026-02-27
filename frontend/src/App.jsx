@@ -247,7 +247,135 @@ function CTMeterPanel({ machine }) {
                 </div>
             </div>
 
+            {/* ── Power Quality Health Card ─────────────────────────────── */}
+            {machine.pqa && (() => {
+                const p = machine.pqa
+                const healthColor = p.healthLabel === 'HEALTHY' ? '#22c55e'
+                    : p.healthLabel === 'MONITOR' ? '#eab308'
+                        : '#ef4444'
+                const riskColor = (r) => ({
+                    LOW: '#22c55e', GOOD: '#22c55e', MODERATE: '#eab308', HIGH: '#ef4444'
+                })[r] || '#64748b'
+                const riskBadge = (r) => (
+                    <span style={{
+                        fontSize: 9, fontWeight: 800, padding: '1px 7px', borderRadius: 12,
+                        background: riskColor(r) + '22', color: riskColor(r),
+                        border: `1px solid ${riskColor(r)}44`
+                    }}>{r}</span>
+                )
+                return (
+                    <div className="machine-panel" style={{ padding: '14px 18px' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                            <div>
+                                <div style={{ fontSize: 13, fontWeight: 700 }}>⚡ Power Quality Health Card</div>
+                                <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                                    5 checks active · Voltage · Imbalance · PF · THD · Overcurrent
+                                </div>
+                            </div>
+                            {/* Health Score Dial */}
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{
+                                    width: 64, height: 64, borderRadius: '50%',
+                                    background: `conic-gradient(${healthColor} ${p.healthScore * 3.6}deg, rgba(255,255,255,0.07) 0deg)`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: `0 0 14px ${healthColor}44`
+                                }}>
+                                    <div style={{
+                                        width: 48, height: 48, borderRadius: '50%',
+                                        background: '#111827',
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        <div style={{ fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-mono)', color: healthColor, lineHeight: 1 }}>{p.healthScore}</div>
+                                        <div style={{ fontSize: 7, color: '#64748b' }}>HEALTH</div>
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: healthColor, marginTop: 4, letterSpacing: 1 }}>{p.healthLabel}</div>
+                            </div>
+                        </div>
+
+                        {/* 5 Risk Indicators Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
+                            {[
+                                { label: 'Voltage', sub: `${p.voltDev_pct > 0 ? '+' : ''}${fmt(p.voltDev_pct, 1)}%`, risk: p.voltageRisk, icon: '⚡' },
+                                { label: 'Imbalance', sub: `${fmt(p.imbalance_pct, 1)}%`, risk: p.phaseImbalanceRisk, icon: '⚖' },
+                                { label: 'Power Factor', sub: fmt(machine.ct_meter?.power_factor, 3), risk: p.pfRisk, icon: '🔋' },
+                                { label: 'THD', sub: `${fmt(machine.ct_meter?.thd_pct, 2)}%`, risk: p.harmonicRisk, icon: '〰' },
+                                { label: 'Current', sub: `${fmt(p.currentPct, 1)}%`, risk: p.overcurrentRisk, icon: '📊' },
+                            ].map(item => (
+                                <div key={item.label} style={{
+                                    background: riskColor(item.risk) + '0d',
+                                    border: `1px solid ${riskColor(item.risk)}33`,
+                                    borderRadius: 8, padding: '8px 6px', textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: 14 }}>{item.icon}</div>
+                                    <div style={{ fontSize: 9, color: '#64748b', margin: '3px 0 2px' }}>{item.label}</div>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: riskColor(item.risk) }}>{item.sub}</div>
+                                    <div style={{ marginTop: 4 }}>{riskBadge(item.risk)}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Engineering Recommendations */}
+                        {p.recommendations.length > 0 && (
+                            <>
+                                <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1, marginBottom: 8 }}>ENGINEERING RECOMMENDATIONS</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                                    {p.recommendations.map((r, i) => (
+                                        <div key={i} style={{
+                                            display: 'flex', gap: 10, alignItems: 'flex-start',
+                                            background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)',
+                                            borderLeft: '3px solid #3b82f6', borderRadius: 8, padding: '8px 12px'
+                                        }}>
+                                            <span style={{ fontSize: 14, flexShrink: 0 }}>🔧</span>
+                                            <div>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', marginBottom: 2 }}>{r.action}</div>
+                                                <div style={{ fontSize: 10, color: '#94a3b8' }}>{r.reason}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* ROI Upgrade Table */}
+                        <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1, marginBottom: 8 }}>POWER QUALITY UPGRADE ROI</div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {p.roiUpgrades.map(u => {
+                                const color = u.applicable ? (u.payback_yrs && u.payback_yrs < 2 ? '#22c55e' : '#eab308') : '#334155'
+                                return (
+                                    <div key={u.name} style={{
+                                        flex: '1 1 160px', minWidth: 160,
+                                        background: u.applicable ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
+                                        border: `1px solid ${u.applicable ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)'}`,
+                                        borderRadius: 10, padding: 12,
+                                        opacity: u.applicable ? 1 : 0.4
+                                    }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: u.applicable ? '#f1f5f9' : '#64748b' }}>{u.name}</div>
+                                        <div style={{ fontSize: 10, color: '#64748b', marginBottom: 8 }}>{u.benefit}</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                            {[
+                                                { l: 'Install Cost', v: u.cost_range },
+                                                { l: 'Annual Benefit', v: u.annual_benefit_rs > 0 ? `₹${(u.annual_benefit_rs / 1000).toFixed(1)}K` : 'N/A' },
+                                                { l: 'Payback', v: u.payback_yrs ? `${u.payback_yrs} yrs` : 'N/A' },
+                                            ].map(r => (
+                                                <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10 }}>
+                                                    <span style={{ color: '#64748b' }}>{r.l}</span>
+                                                    <span style={{ fontWeight: 700, color: r.l === 'Payback' ? color : '#94a3b8' }}>{r.v}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {!u.applicable && <div style={{ fontSize: 9, color: '#22c55e', marginTop: 6, textAlign: 'center' }}>✓ Not required</div>}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )
+            })()}
+
             {/* ── Phase 2: Anomaly Detection Panel ─────────────────────────── */}
+
             {machine.anomalies && (
                 <div className="machine-panel" style={{ padding: '14px 18px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>

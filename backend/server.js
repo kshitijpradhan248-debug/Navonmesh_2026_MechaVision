@@ -287,6 +287,139 @@ function calcDISCOMPenalty(ct, kwhSession) {
     };
 }
 
+// ─── Power Quality Analyzer (Full Engineering Module) ────────────────────────
+// Converts raw CT data into actionable engineering recommendations
+// Architecture: Simulation → CT Physics → PQA → ROI → Dashboard
+function powerQualityAnalyzer(ct, ratedCurrentA, claimedKw, kwhSession) {
+    const RATED_V = 415;   // Indian industrial standard (V L-L)
+    const V_avg = (ct.phase_voltage.L1 + ct.phase_voltage.L2 + ct.phase_voltage.L3) / 3;
+    const I_avg = (ct.phase_current.L1 + ct.phase_current.L2 + ct.phase_current.L3) / 3;
+    const I_max = Math.max(ct.phase_current.L1, ct.phase_current.L2, ct.phase_current.L3);
+    const PF = ct.power_factor;
+    const THD = ct.thd_pct;
+
+    // ── A. Voltage Deviation ─────────────────────────────────────────────────
+    // %Deviation = (Vactual - Vrated) / Vrated × 100
+    const voltDev_pct = ((V_avg - RATED_V) / RATED_V) * 100;
+    const voltRisk = Math.abs(voltDev_pct) > 8 ? "HIGH"
+        : Math.abs(voltDev_pct) > 4 ? "MODERATE"
+            : "LOW";
+
+    // ── B. Phase Imbalance ───────────────────────────────────────────────────
+    // %Imbalance = Max deviation from avg / Avg × 100  (NEMA MG1 method)
+    const I_deviations = [ct.phase_current.L1, ct.phase_current.L2, ct.phase_current.L3]
+        .map(i => Math.abs(i - I_avg));
+    const maxDeviation = Math.max(...I_deviations);
+    const imbalance_pct = I_avg > 0 ? (maxDeviation / I_avg) * 100 : 0;
+    const imbalanceRisk = imbalance_pct > 10 ? "HIGH"
+        : imbalance_pct > 5 ? "MODERATE"
+            : "LOW";
+
+    // ── C. Power Factor Risk ─────────────────────────────────────────────────
+    const pfRisk = PF < 0.85 ? "HIGH"
+        : PF < 0.90 ? "MODERATE"
+            : PF < 0.95 ? "LOW"
+                : "GOOD";
+    const pfStatus = PF >= 0.95 ? "GOOD" : PF >= 0.90 ? "LOW" : PF >= 0.85 ? "MODERATE" : "HIGH";
+
+    // ── D. Harmonic Distortion (IEEE 519) ────────────────────────────────────
+    const harmonicRisk = THD > 8 ? "HIGH"
+        : THD > 5 ? "MODERATE"
+            : "LOW";
+
+    // ── E. Overcurrent Risk ──────────────────────────────────────────────────
+    const currentPct = ratedCurrentA > 0 ? (I_avg / ratedCurrentA) * 100 : 0;
+    const overcurrentRisk = currentPct > 110 ? "HIGH"
+        : currentPct > 90 ? "MODERATE"
+            : "LOW";
+
+    // ── Overall Health Score (0–100, higher = healthier) ─────────────────────
+    const riskScore = (r) => ({ LOW: 0, GOOD: 0, MODERATE: 15, HIGH: 35 })[r] || 0;
+    const totalDeduction = riskScore(voltRisk) + riskScore(imbalanceRisk) +
+        riskScore(pfRisk) + riskScore(harmonicRisk) + riskScore(overcurrentRisk);
+    const healthScore = Math.max(0, 100 - totalDeduction);
+    const healthLabel = healthScore >= 80 ? "HEALTHY" : healthScore >= 55 ? "MONITOR" : "CRITICAL";
+
+    // ── Recommendations (engineering actions) ────────────────────────────────
+    const recommendations = [];
+    if (voltRisk === "HIGH")
+        recommendations.push({ action: "Install Servo Voltage Stabilizer", reason: `Voltage deviation ${voltDev_pct.toFixed(1)}% exceeds ±8% — risk of CNC control instability and servo motor heating.` });
+    if (imbalanceRisk !== "LOW")
+        recommendations.push({ action: "Redistribute Phase Loads", reason: `Phase imbalance ${imbalance_pct.toFixed(1)}% — causes spindle vibration, bearing stress, and uneven torque delivery.` });
+    if (pfRisk === "HIGH")
+        recommendations.push({ action: "Install APFC Panel (Auto Power Factor Correction)", reason: `PF = ${PF.toFixed(3)} — DISCOM penalty applies. Capacitor bank will correct reactive power.` });
+    else if (pfRisk === "MODERATE")
+        recommendations.push({ action: "Add Capacitor Bank for PF Improvement", reason: `PF = ${PF.toFixed(3)} — below 0.90 optimal zone. PF correction suggested.` });
+    if (harmonicRisk === "HIGH")
+        recommendations.push({ action: "Install Active Harmonic Filter (AHF)", reason: `THD = ${THD.toFixed(2)}% — critical. Transformer heating, nuisance tripping, and equipment damage risk.` });
+    else if (harmonicRisk === "MODERATE")
+        recommendations.push({ action: "Install Passive Harmonic Filter", reason: `THD = ${THD.toFixed(2)}% — exceeds IEEE 519 limit of 5%. Monitor closely.` });
+    if (overcurrentRisk === "HIGH")
+        recommendations.push({ action: "Immediate Overload Check — Risk of Breaker Trip", reason: `Current draw ${currentPct.toFixed(1)}% of rated — overloading detected. Check mechanical load and cooling.` });
+
+    // ── ROI Layer for Power Quality Upgrades ─────────────────────────────────
+    // Annual PF penalty saved (DISCOM surcharge)
+    const pfPenaltySaved = PF < 0.90
+        ? Math.min(15, ((0.90 - PF) / 0.01)) * (kwhSession * SYSTEM.COST_PER_KWH * 6000 / (kwhSession || 1) / 100)
+        : 0;
+
+    // Downtime cost savings: VMC downtime = ₹5000/hr, filter reduces trips by ~30%
+    const downtimeSavedRs = harmonicRisk !== "LOW" ? 5000 * 12 * 0.30 : 0; // 12 trips/yr avg
+
+    // Equipment life extension: 20% longer motor life with stable power = 20% of replacement cost
+    const motorLifeSavedRs = (voltRisk !== "LOW" || imbalanceRisk !== "LOW") ? 80000 * 0.20 : 0;
+
+    const roiUpgrades = [
+        {
+            name: "Servo Voltage Stabilizer",
+            cost_range: "₹1.5L – ₹3L",
+            cost_mid_rs: 225000,
+            benefit: "Protects CNC accuracy, eliminates voltage-related downtime",
+            annual_benefit_rs: voltRisk !== "LOW" ? motorLifeSavedRs + downtimeSavedRs * 0.5 : 0,
+            applicable: voltRisk !== "LOW",
+        },
+        {
+            name: "APFC Panel",
+            cost_range: "₹1L – ₹2L",
+            cost_mid_rs: 150000,
+            benefit: "Eliminates DISCOM reactive energy penalty, improves PF to 0.98+",
+            annual_benefit_rs: +(pfPenaltySaved).toFixed(0),
+            applicable: pfRisk !== "GOOD",
+        },
+        {
+            name: "Active Harmonic Filter (AHF)",
+            cost_range: "₹2L – ₹4L",
+            cost_mid_rs: 300000,
+            benefit: "Reduces motor heating, eliminates nuisance trips, extends equipment life",
+            annual_benefit_rs: +(downtimeSavedRs + motorLifeSavedRs * 0.5).toFixed(0),
+            applicable: harmonicRisk !== "LOW",
+        },
+    ].map(u => ({
+        ...u,
+        payback_yrs: u.annual_benefit_rs > 0
+            ? +(u.cost_mid_rs / u.annual_benefit_rs).toFixed(1)
+            : null,
+    }));
+
+    return {
+        // Risk levels
+        voltageRisk: voltRisk,
+        phaseImbalanceRisk: imbalanceRisk,
+        pfRisk,
+        harmonicRisk,
+        overcurrentRisk,
+        // Measurements
+        voltDev_pct: +voltDev_pct.toFixed(2),
+        imbalance_pct: +imbalance_pct.toFixed(2),
+        currentPct: +currentPct.toFixed(1),
+        healthScore,
+        healthLabel,
+        // Actions
+        recommendations,
+        roiUpgrades,
+    };
+}
+
 // ─── Simulation tick ──────────────────────────────────────────────────────────
 const TICK_SEC = 1; // 1 second tick
 
@@ -330,6 +463,7 @@ function simulateTick() {
         const anomalies = detectAnomalies(ct, actual_total_kw, m.rated_current_A, claimed_total_kw);
         const co2 = calcCO2(m.kwh_total);
         const discom = calcDISCOMPenalty(ct, m.kwh_total);
+        const pqa = powerQualityAnalyzer(ct, m.rated_current_A, claimed_total_kw, m.kwh_total);
 
         m.history.push(actual_total_kw);
         if (m.history.length > 60) m.history.shift();
@@ -351,9 +485,10 @@ function simulateTick() {
             cost_total: +m.cost_total.toFixed(2),    // 24/7 cost accumulator
             uptime_ms: uptimeMs,
             savings,
-            anomalies,                               // ← Phase 2: anomaly alerts
-            co2,                                     // ← Phase 2: CO₂ tracker
-            discom,                                  // ← Phase 2: DISCOM penalty
+            anomalies,
+            co2,
+            discom,
+            pqa,                                     // ← Power Quality Analyzer
             history: [...m.history],
         };
     });
