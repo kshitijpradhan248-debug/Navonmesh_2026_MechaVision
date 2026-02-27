@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { io } from 'socket.io-client'
 
 const BACKEND_URL = 'http://localhost:3001'
@@ -20,7 +20,10 @@ const IE_COLORS = { IE1: '#ef4444', IE2: '#eab308', IE3: '#3b82f6', IE4: '#22c55
 const PHASE_COLORS = { L1: '#ef4444', L2: '#eab308', L3: '#22c55e' }
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
+// Each instance gets a unique gradient ID to avoid SVG defs ID collision
+let _sparkId = 0
 function Sparkline({ data, color, max }) {
+    const [gid] = useState(() => `sg_${_sparkId++}`)
     if (!data || data.length < 2) return null
     const w = 300, h = 50, pad = 2
     const pts = data.map((v, i) => {
@@ -30,11 +33,11 @@ function Sparkline({ data, color, max }) {
     }).join(' ')
     return (
         <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`}>
-            <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+            <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={color} stopOpacity="0.2" />
                 <stop offset="100%" stopColor={color} stopOpacity="0" />
             </linearGradient></defs>
-            <polygon fill="url(#sg)" points={`${pad},${h} ${pts.split(' ').join(' ')} ${w - pad},${h}`} />
+            <polygon fill={`url(#${gid})`} points={`${pad},${h} ${pts} ${w - pad},${h}`} />
             <polyline fill="none" stroke={color} strokeWidth="2" points={pts} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     )
@@ -92,8 +95,11 @@ function CTMeterPanel({ machine }) {
     const modeInfo = MODE_LABELS[machine.mode] || { label: machine.mode, color: '#64748b' }
 
     function fmtUptime(ms) {
-        const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60)
-        return `${h}h ${m % 60}m ${s % 60}s`
+        const totalSec = Math.floor(ms / 1000)
+        const h = Math.floor(totalSec / 3600)
+        const m = Math.floor((totalSec % 3600) / 60)
+        const s = totalSec % 60
+        return `${h}h ${m}m ${s}s`
     }
 
     return (

@@ -96,6 +96,7 @@ body,
   font-weight: 700;
   background: linear-gradient(135deg, #60a5fa, #c084fc);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.3px;
 }
@@ -185,7 +186,8 @@ body,
   grid-template-columns: 280px 1fr;
   gap: 0;
   overflow: hidden;
-  flex: 1;
+  min-height: 0;
+  /* Critical: allows grid children to shrink below content size */
 }
 
 /* ─── Machine Detail Panel ─────────────────────────────────────────────────── */
@@ -358,7 +360,7 @@ body,
 .machine-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 4px 8px;
   margin-top: 8px;
 }
 
