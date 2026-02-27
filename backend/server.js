@@ -137,10 +137,9 @@ function calcCTReadings(totalKw) {
 
 // ─── Savings calculator ───────────────────────────────────────────────────────
 function calcSavings(m, mechLoads) {
-    const COMPS = COMP_KEYS;
     const HRS = 6000;
     let current = 0, ie3 = 0, ie4 = 0, ie5 = 0, vfd = 0, full = 0;
-    COMPS.forEach((k, i) => {
+    COMP_KEYS.forEach((k, i) => {
         const mech = mechLoads[i];
         const cls = m.currentMotorClass[k];
         const hasV = m.hasVFD[k] || false;
@@ -163,6 +162,128 @@ function calcSavings(m, mechLoads) {
             vfd_only: { label: "VFD Add-on", ...s(vfd), est_cost_rs: 60000 },
             full_upgrade: { label: "IE5 + VFD", ...s(full), est_cost_rs: 350000 },
         }
+    };
+}
+
+// ─── Phase 2: Anomaly Detection Engine (PDR Tier 2A) ─────────────────────────
+// 5 detection rules from Product Development Roadmap
+function detectAnomalies(ct, actualKw, ratedCurrentA, claimedKw) {
+    const anomalies = [];
+    const I_avg = (ct.phase_current.L1 + ct.phase_current.L2 + ct.phase_current.L3) / 3;
+    const I_max = Math.max(ct.phase_current.L1, ct.phase_current.L2, ct.phase_current.L3);
+    const I_min = Math.min(ct.phase_current.L1, ct.phase_current.L2, ct.phase_current.L3);
+    const imbalance_pct = I_avg > 0 ? ((I_max - I_min) / I_avg) * 100 : 0;
+    const load_pct = claimedKw > 0 ? (actualKw / claimedKw) * 100 : 0;
+
+    // Rule 1 – Power Factor penalty risk (DISCOM penalty below 0.85)
+    if (ct.power_factor < 0.85) {
+        anomalies.push({
+            code: "PF_LOW",
+            severity: ct.power_factor < 0.75 ? "CRITICAL" : "WARNING",
+            title: "Low Power Factor",
+            message: `PF = ${ct.power_factor.toFixed(3)} — below 0.85 DISCOM threshold. Reactive energy surcharge applies.`,
+            impact: "Financial — DISCOM penalty on electricity bill",
+            fix: "Install capacitor bank / VFD with PF correction",
+        });
+    }
+
+    // Rule 2 – Total Harmonic Distortion (IEEE 519 limit: <5% for industrial)
+    if (ct.thd_pct > 5) {
+        anomalies.push({
+            code: "THD_HIGH",
+            severity: ct.thd_pct > 8 ? "CRITICAL" : "WARNING",
+            title: "High Harmonic Distortion",
+            message: `THD = ${ct.thd_pct.toFixed(2)}% — exceeds IEEE 519 limit of 5%. Risk of transformer heating.`,
+            impact: "Power quality — equipment damage, excess heat",
+            fix: "Install harmonic filter / Active front-end VFD",
+        });
+    }
+
+    // Rule 3 – Motor oversizing (load below 40% of rated)
+    if (load_pct < 40 && actualKw > 0.5) {
+        anomalies.push({
+            code: "OVERSIZE",
+            severity: "WARNING",
+            title: "Motor Oversizing Detected",
+            message: `Machine running at ${load_pct.toFixed(1)}% of nameplate — motor likely oversized for this task.`,
+            impact: "Efficiency — motor runs in low-efficiency zone below 40% load",
+            fix: "Right-size motor or use VFD to reduce operating speed",
+        });
+    }
+
+    // Rule 4 – Phase current imbalance (>10% = NEMA MG1 derating required)
+    if (imbalance_pct > 10) {
+        anomalies.push({
+            code: "IMBALANCE",
+            severity: "WARNING",
+            title: "Phase Current Imbalance",
+            message: `Phase imbalance = ${imbalance_pct.toFixed(1)}% — exceeds 10% NEMA MG1 threshold.`,
+            impact: "Mechanical — motor stress, vibration, reduced bearing life",
+            fix: "Check supply symmetry, re-balance 3-phase loads",
+        });
+    }
+
+    // Rule 5 – High current with low PF → bearing/winding stress
+    if (I_avg > ratedCurrentA * 0.85 && ct.power_factor < 0.80) {
+        anomalies.push({
+            code: "BEARING_RISK",
+            severity: "CRITICAL",
+            title: "Bearing Wear Risk",
+            message: `High current (${I_avg.toFixed(1)}A) combined with low PF (${ct.power_factor.toFixed(3)}) indicates probable winding or bearing stress.`,
+            impact: "Predictive — early bearing/winding failure signal",
+            fix: "Schedule inspection. Check lubrication, bearing clearance.",
+        });
+    }
+
+    return {
+        count: anomalies.length,
+        critical: anomalies.filter(a => a.severity === "CRITICAL").length,
+        warnings: anomalies.filter(a => a.severity === "WARNING").length,
+        items: anomalies,
+        imbalance_pct: +imbalance_pct.toFixed(2),
+        load_pct: +load_pct.toFixed(1),
+    };
+}
+
+// ─── Phase 2: CO₂ Tracker (PDR Tier 1E) ──────────────────────────────────────
+// Indian grid emission factor: 0.82 kg CO₂ per kWh (CEA 2023)
+const CO2_KG_PER_KWH = 0.82;
+
+function calcCO2(kwhTotal) {
+    const kg = kwhTotal * CO2_KG_PER_KWH;
+    const trees = kg / 21.77; // 1 tree absorbs ~21.77 kg CO₂/year average
+    return {
+        kg_total: +kg.toFixed(4),
+        trees_equiv: +trees.toFixed(4),
+        factor: CO2_KG_PER_KWH,
+    };
+}
+
+// ─── Phase 2: DISCOM Reactive Energy Penalty Estimator ───────────────────────
+// Indian DISCOMs charge reactive energy surcharge when PF < 0.85
+// Typical penalty: 0.5–1% surcharge per 0.01 PF below 0.90 (MSEDCL / BESCOM rates)
+// Also: kVARh billing above 0.04 × kWh threshold on HT connections
+function calcDISCOMPenalty(ct, kwhSession) {
+    const PF = ct.power_factor;
+    const kVARh = ct.reactive_kvar * (1 / 3600); // kVARh per tick
+
+    // Surcharge: 1% of energy bill per 0.01 PF below 0.90
+    let surcharge_pct = 0;
+    if (PF < 0.90) {
+        surcharge_pct = Math.min(15, ((0.90 - PF) / 0.01) * 1.0); // cap at 15%
+    }
+    const base_cost = kwhSession * SYSTEM.COST_PER_KWH;
+    const penalty_rs = base_cost * (surcharge_pct / 100);
+    const annual_penalty = penalty_rs * (6000 / (kwhSession || 1)); // project to annual
+
+    return {
+        pf: +PF.toFixed(3),
+        surcharge_pct: +surcharge_pct.toFixed(2),
+        penalty_rs: +penalty_rs.toFixed(2),
+        annual_penalty_rs: +(kwhSession > 0 ? Math.min(annual_penalty, 999999) : 0).toFixed(0),
+        status: PF >= 0.90 ? "OK" : PF >= 0.85 ? "RISK" : "PENALTY",
+        threshold: 0.85,
+        optimal: 0.95,
     };
 }
 
@@ -206,6 +327,9 @@ function simulateTick() {
         m.cost_total += dKwh * SYSTEM.COST_PER_KWH;
 
         const savings = calcSavings(m, mechLoads);
+        const anomalies = detectAnomalies(ct, actual_total_kw, m.rated_current_A, claimed_total_kw);
+        const co2 = calcCO2(m.kwh_total);
+        const discom = calcDISCOMPenalty(ct, m.kwh_total);
 
         m.history.push(actual_total_kw);
         if (m.history.length > 60) m.history.shift();
@@ -222,11 +346,14 @@ function simulateTick() {
             claimed: c, actual,
             currentMotorClass: m.currentMotorClass,
             hasVFD: m.hasVFD,
-            ct_meter: ct,                              // ← Live CT clamp readings
-            kwh_total: +m.kwh_total.toFixed(4),       // ← 24/7 energy accumulator
-            cost_total: +m.cost_total.toFixed(2),      // ← 24/7 cost accumulator
+            ct_meter: ct,                           // Live CT clamp readings
+            kwh_total: +m.kwh_total.toFixed(4),      // 24/7 energy accumulator
+            cost_total: +m.cost_total.toFixed(2),    // 24/7 cost accumulator
             uptime_ms: uptimeMs,
             savings,
+            anomalies,                               // ← Phase 2: anomaly alerts
+            co2,                                     // ← Phase 2: CO₂ tracker
+            discom,                                  // ← Phase 2: DISCOM penalty
             history: [...m.history],
         };
     });

@@ -246,6 +246,137 @@ function CTMeterPanel({ machine }) {
                     })}
                 </div>
             </div>
+
+            {/* ── Phase 2: Anomaly Detection Panel ─────────────────────────── */}
+            {machine.anomalies && (
+                <div className="machine-panel" style={{ padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>🚨 Anomaly Detection</div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            {machine.anomalies.critical > 0 && (
+                                <span style={{ fontSize: 10, fontWeight: 700, background: '#ef444422', color: '#ef4444', padding: '2px 10px', borderRadius: 20, border: '1px solid #ef444440' }}>
+                                    {machine.anomalies.critical} CRITICAL
+                                </span>
+                            )}
+                            {machine.anomalies.warnings > 0 && (
+                                <span style={{ fontSize: 10, fontWeight: 700, background: '#eab30822', color: '#eab308', padding: '2px 10px', borderRadius: 20, border: '1px solid #eab30840' }}>
+                                    {machine.anomalies.warnings} WARNING
+                                </span>
+                            )}
+                            {machine.anomalies.count === 0 && (
+                                <span style={{ fontSize: 10, fontWeight: 700, background: '#22c55e22', color: '#22c55e', padding: '2px 10px', borderRadius: 20 }}>
+                                    ✓ ALL CLEAR
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>
+                        5 PDR rules active · Load: {machine.anomalies.load_pct}% · Phase imbalance: {machine.anomalies.imbalance_pct}%
+                    </div>
+                    {machine.anomalies.count === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px 0', color: '#22c55e', fontSize: 13 }}>
+                            ✅ No anomalies detected — machine operating normally
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {machine.anomalies.items.map((a) => {
+                                const isCrit = a.severity === 'CRITICAL'
+                                const color = isCrit ? '#ef4444' : '#eab308'
+                                return (
+                                    <div key={a.code} style={{
+                                        background: `${color}0d`,
+                                        border: `1px solid ${color}33`,
+                                        borderLeft: `3px solid ${color}`,
+                                        borderRadius: 8, padding: '10px 14px'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                            <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}22`, padding: '1px 7px', borderRadius: 20 }}>
+                                                {a.severity}
+                                            </span>
+                                            <span style={{ fontSize: 12, fontWeight: 700 }}>{a.title}</span>
+                                            <span style={{ marginLeft: 'auto', fontSize: 9, color: '#475569', fontFamily: 'var(--font-mono)' }}>{a.code}</span>
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{a.message}</div>
+                                        <div style={{ display: 'flex', gap: 16, fontSize: 10 }}>
+                                            <span style={{ color: '#64748b' }}>⚠ {a.impact}</span>
+                                            <span style={{ color: '#3b82f6' }}>→ {a.fix}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── Phase 2: CO₂ Tracker ─────────────────────────────────────── */}
+            {machine.co2 && (
+                <div className="machine-panel" style={{ padding: '14px 18px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>🌿 CO₂ Emission Tracker</div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>
+                        Indian grid factor: {machine.co2.factor} kg CO₂ / kWh (CEA 2023)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(0,0,0,0.3)', borderRadius: 12, marginBottom: 14 }}>
+                        <LCDValue value={fmt(machine.co2.kg_total, 4)} unit="kg CO₂" label="Total Emitted" color="#ef4444" size={20} />
+                        <LCDValue value={fmt(machine.kwh_total, 4)} unit="kWh" label="Energy Used" color="#22c55e" size={20} />
+                        <LCDValue value={fmt(machine.co2.trees_equiv, 4)} unit="trees/yr" label="Tree Equiv." color="#4ade80" size={20} />
+                    </div>
+                    <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#94a3b8' }}>
+                        🌱 Upgrading to <strong style={{ color: '#22c55e' }}>IE5 + VFD</strong> could reduce emissions by up to <strong style={{ color: '#4ade80' }}>
+                            {machine.savings ? fmt(Math.min(30, machine.savings.scenarios.full_upgrade?.saving_pct || 0), 1) : '0'}%
+                        </strong> — saving approximately <strong style={{ color: '#4ade80' }}>
+                            {machine.savings ? fmt((machine.co2.kg_total * (machine.savings.scenarios.full_upgrade?.saving_pct || 0) / 100), 4) : '0'} kg CO₂
+                        </strong> so far this session.
+                    </div>
+                </div>
+            )}
+
+            {/* ── Phase 2: DISCOM Penalty Estimator ───────────────────────── */}
+            {machine.discom && (
+                <div className="machine-panel" style={{ padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>🏛️ DISCOM Reactive Energy Penalty</div>
+                        <span style={{
+                            fontSize: 10, fontWeight: 800, padding: '2px 12px', borderRadius: 20,
+                            background: machine.discom.status === 'OK' ? '#22c55e22' : machine.discom.status === 'RISK' ? '#eab30822' : '#ef444422',
+                            color: machine.discom.status === 'OK' ? '#22c55e' : machine.discom.status === 'RISK' ? '#eab308' : '#ef4444',
+                            border: `1px solid ${machine.discom.status === 'OK' ? '#22c55e40' : machine.discom.status === 'RISK' ? '#eab30840' : '#ef444440'}`
+                        }}>
+                            {machine.discom.status}
+                        </span>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginBottom: 14 }}>
+                        Based on MSEDCL/BESCOM tariff schedule · Penalty threshold: PF &lt; {machine.discom.threshold} · Optimal: PF ≥ {machine.discom.optimal}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(0,0,0,0.3)', borderRadius: 12, marginBottom: 14 }}>
+                        <LCDValue
+                            value={fmt(machine.discom.pf, 3)}
+                            unit="Power Factor"
+                            label="Current PF"
+                            color={machine.discom.status === 'OK' ? '#22c55e' : machine.discom.status === 'RISK' ? '#eab308' : '#ef4444'}
+                            size={22}
+                        />
+                        <LCDValue value={`${fmt(machine.discom.surcharge_pct, 2)}%`} unit="Surcharge" label="PF Penalty Rate" color="#f97316" size={20} />
+                        <LCDValue value={`₹${fmt(machine.discom.annual_penalty_rs, 0)}`} unit="/ year" label="Proj. Annual Penalty" color="#ef4444" size={18} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {[
+                            { label: 'Session Energy Cost', val: `₹${fmt(machine.cost_total, 2)}` },
+                            { label: 'Session Penalty', val: `₹${fmt(machine.discom.penalty_rs, 2)}` },
+                            { label: 'Fix: Capacitor Bank', val: '₹15K–₹40K instal.' },
+                            { label: 'Fix: VFD PF Correction', val: 'Built-in on most VFDs' },
+                        ].map(r => (
+                            <div key={r.label} style={{
+                                flex: '1 1 150px', background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 12px'
+                            }}>
+                                <div style={{ fontSize: 9, color: '#64748b', marginBottom: 3 }}>{r.label}</div>
+                                <div style={{ fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{r.val}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
