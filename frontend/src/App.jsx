@@ -225,6 +225,7 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
     const [catId, setCatId] = useState('')
     const [custom, setCustom] = useState({})
     const [applied, setApplied] = useState(false)
+    const [inputMode, setInputMode] = useState('auto')  // 'auto' | 'manual'
 
     const selected = catalog.find(c => c.id === catId)
 
@@ -241,16 +242,18 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
     function handleApply() {
         if (!catId) return
         const components = {}
-        COMP_LABELS.forEach(({ key }) => {
-            if (custom[key] !== undefined && custom[key] !== '') components[key] = parseFloat(custom[key])
-        })
+        if (inputMode === 'manual') {
+            COMP_LABELS.forEach(({ key }) => {
+                if (custom[key] !== undefined && custom[key] !== '') components[key] = parseFloat(custom[key])
+            })
+        }
         socket.emit('configure_machine', {
             slot,
             catalog_id: catId,
-            custom: {
+            custom: inputMode === 'manual' ? {
                 ...(custom.rated_current_A ? { rated_current_A: parseFloat(custom.rated_current_A) } : {}),
                 ...(Object.keys(components).length ? { components } : {}),
-            }
+            } : {}
         })
         setApplied(true)
         setTimeout(() => setApplied(false), 3000)
@@ -343,64 +346,97 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
                         )}
                     </div>
 
-                    {/* ── Step 2: Custom Observed Overrides ── */}
+                    {/* ── Step 2: Input Mode ── */}
                     {selected && (
                         <div>
                             <div style={{ height: 1, background: '#E0E7FF', marginBottom: 14 }} />
-                            <div style={{ fontSize: 9, color: '#10B981', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
-                                STEP 2 — ENTER YOUR OBSERVED / ACTUAL VALUES (OPTIONAL)
-                            </div>
-                            <div style={{ fontSize: 9, color: '#64748b', marginBottom: 10 }}>
-                                Leave blank to use catalog nameplate specs. Fill in your field-measured values to compare against benchmark.
+                            <div style={{ fontSize: 9, color: '#10B981', fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>
+                                STEP 2 — INPUT MODE
                             </div>
 
-                            {/* Rated Current override */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 10, padding: '8px 12px' }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, color: '#92400E', flex: 1 }}>⚡ Your Observed Rated Current (A)</span>
-                                <input
-                                    type="number" step="0.1" min="0" max="200"
-                                    placeholder={`Catalog: ${selected.rated_current_A}A`}
-                                    value={custom.rated_current_A || ''}
-                                    onChange={e => setCustom(c => ({ ...c, rated_current_A: e.target.value }))}
-                                    style={{ width: 100, padding: '4px 8px', borderRadius: 8, border: '1.5px solid #FCD34D', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textAlign: 'right', outline: 'none', background: 'white' }}
-                                />
-                                <span style={{ fontSize: 10, color: '#92400E' }}>A</span>
+                            {/* Auto / Manual toggle */}
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                                <button onClick={() => { setInputMode('auto'); setCustom({}) }} style={{
+                                    flex: 1, padding: '8px 0', borderRadius: 10, border: '2px solid',
+                                    borderColor: inputMode === 'auto' ? '#10B981' : '#E0E7FF',
+                                    background: inputMode === 'auto' ? 'linear-gradient(135deg,#D1FAE5,#ECFDF5)' : '#FAFAFA',
+                                    color: inputMode === 'auto' ? '#065F46' : '#94A3B8',
+                                    fontWeight: 800, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s'
+                                }}>
+                                    ✅ Auto — Use Catalog Specs
+                                </button>
+                                <button onClick={() => setInputMode('manual')} style={{
+                                    flex: 1, padding: '8px 0', borderRadius: 10, border: '2px solid',
+                                    borderColor: inputMode === 'manual' ? '#6366F1' : '#E0E7FF',
+                                    background: inputMode === 'manual' ? 'linear-gradient(135deg,#EEF2FF,#F5F3FF)' : '#FAFAFA',
+                                    color: inputMode === 'manual' ? '#4338CA' : '#94A3B8',
+                                    fontWeight: 800, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s'
+                                }}>
+                                    ✏ Manual — Enter My Values
+                                </button>
                             </div>
 
-                            {/* Component kW overrides */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {COMP_LABELS.map(({ key, label }) => (
-                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: 10, color: '#475569', flex: 1 }}>{label}</span>
-                                        <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#64748b', width: 60, textAlign: 'right' }}>
-                                            Catalog: {selected.claimed[key]?.toFixed?.(2) ?? '—'}kW
-                                        </div>
-                                        <input
-                                            type="number" step="0.1" min="0"
-                                            placeholder="Your val"
-                                            value={custom[key] || ''}
-                                            onChange={e => setCustom(c => ({ ...c, [key]: e.target.value }))}
-                                            style={{ width: 80, padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${custom[key] ? '#A5B4FC' : '#E0E7FF'}`, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textAlign: 'right', outline: 'none', background: custom[key] ? '#EEF2FF' : 'white' }}
-                                        />
-                                        <span style={{ fontSize: 10, color: '#64748b' }}>kW</span>
+                            {inputMode === 'auto' && (
+                                <div style={{ background: '#F0FDF4', border: '1.5px solid #A7F3D0', borderRadius: 10, padding: '10px 14px', fontSize: 10, color: '#065F46' }}>
+                                    <strong>Auto mode:</strong> The simulation will use <strong>{selected.make} {selected.model}</strong> catalog nameplate specs exactly as published by the manufacturer — no manual overrides required.
+                                </div>
+                            )}
+
+                            {inputMode === 'manual' && (
+                                <div>
+                                    <div style={{ fontSize: 9, color: '#64748b', marginBottom: 10 }}>
+                                        Enter your field-measured values below. Leave blank to keep the catalog benchmark for that component.
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Apply Button */}
-                    {catId && (
-                        <button onClick={handleApply} style={{
-                            width: '100%', padding: '10px',
-                            background: applied ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                            color: '#fff', border: 'none', borderRadius: 12, fontSize: 13,
-                            fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5,
-                            boxShadow: '0 4px 16px rgba(99,102,241,0.35)',
-                            transition: 'all 0.3s'
-                        }}>
-                            {applied ? '✅ Configuration Applied!' : `🚀 Apply — ${selected?.make || ''} ${selected?.model || ''}`}
-                        </button>
+                                    {/* Rated Current override */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 10, padding: '8px 12px' }}>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: '#92400E', flex: 1 }}>⚡ Your Observed Rated Current (A)</span>
+                                        <input
+                                            type="number" step="0.1" min="0" max="200"
+                                            placeholder={`Catalog: ${selected.rated_current_A}A`}
+                                            value={custom.rated_current_A || ''}
+                                            onChange={e => setCustom(c => ({ ...c, rated_current_A: e.target.value }))}
+                                            style={{ width: 100, padding: '4px 8px', borderRadius: 8, border: '1.5px solid #FCD34D', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textAlign: 'right', outline: 'none', background: 'white' }}
+                                        />
+                                        <span style={{ fontSize: 10, color: '#92400E' }}>A</span>
+                                    </div>
+
+                                    {/* Component kW overrides */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                        {COMP_LABELS.map(({ key, label }) => (
+                                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: 10, color: '#475569', flex: 1 }}>{label}</span>
+                                                <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#64748b', width: 60, textAlign: 'right' }}>
+                                                    Catalog: {selected.claimed[key]?.toFixed?.(2) ?? '—'}kW
+                                                </div>
+                                                <input
+                                                    type="number" step="0.1" min="0"
+                                                    placeholder="Your val"
+                                                    value={custom[key] || ''}
+                                                    onChange={e => setCustom(c => ({ ...c, [key]: e.target.value }))}
+                                                    style={{ width: 80, padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${custom[key] ? '#A5B4FC' : '#E0E7FF'}`, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textAlign: 'right', outline: 'none', background: custom[key] ? '#EEF2FF' : 'white' }}
+                                                />
+                                                <span style={{ fontSize: 10, color: '#64748b' }}>kW</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Apply Button */}
+                            {catId && (
+                                <button onClick={handleApply} style={{
+                                    width: '100%', padding: '10px',
+                                    background: applied ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                                    color: '#fff', border: 'none', borderRadius: 12, fontSize: 13,
+                                    fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5,
+                                    boxShadow: '0 4px 16px rgba(99,102,241,0.35)',
+                                    transition: 'all 0.3s'
+                                }}>
+                                    {applied ? '✅ Configuration Applied!' : `🚀 Apply — ${selected?.make || ''} ${selected?.model || ''}`}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             )}
@@ -409,7 +445,6 @@ function MachineSetupPanel({ machine, catalog, socket, slot }) {
 }
 
 // ─── CT Clamp Device Panel ────────────────────────────────────────────────────
-
 function CTMeterPanel({ machine }) {
     const ct = machine.ct_meter
     if (!ct) return null

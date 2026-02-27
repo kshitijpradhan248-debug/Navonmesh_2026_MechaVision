@@ -151,6 +151,24 @@ const MACHINE_CATALOG = [
         popular: "EV & electronics component SMEs near Pune / Chakan", spindle_rpm: 24000, x_travel: 700, y_travel: 400, z_travel: 330,
         rated_current_A: 38, claimed: { spindle_kw: 5.5, x_axis_kw: 1.0, y_axis_kw: 0.8, z_axis_kw: 0.8, coolant_kw: 0.55, atc_kw: 0.4, aux_kw: 0.4, total_kw: 9.45 }, idle_kw: 2.0
     },
+    // ── Symphony CNC (Ahmedabad) ────────────────────────────────────────────
+    {
+        id: "SYMPH_VMC430", make: "Symphony CNC", model: "VMC 430", type: "VMC", origin: "Indian", city: "Ahmedabad",
+        popular: "Entry-affordable VMC — very common in Nashik / Palghar small shops", spindle_rpm: 6000, x_travel: 430, y_travel: 340, z_travel: 380,
+        rated_current_A: 22, claimed: { spindle_kw: 5.5, x_axis_kw: 1.0, y_axis_kw: 0.8, z_axis_kw: 0.75, coolant_kw: 0.37, atc_kw: 0.25, aux_kw: 0.35, total_kw: 9.02 }, idle_kw: 2.1
+    },
+
+    {
+        id: "SYMPH_VMC640", make: "Symphony CNC", model: "VMC 640", type: "VMC", origin: "Indian", city: "Ahmedabad",
+        popular: "Mid-range VMC — Gujarat / Maharashtra auto ancillaries & tools shops", spindle_rpm: 7500, x_travel: 640, y_travel: 420, z_travel: 500,
+        rated_current_A: 32, claimed: { spindle_kw: 7.5, x_axis_kw: 1.2, y_axis_kw: 1.0, z_axis_kw: 0.9, coolant_kw: 0.55, atc_kw: 0.4, aux_kw: 0.45, total_kw: 12.0 }, idle_kw: 2.6
+    },
+
+    {
+        id: "SYMPH_VMC850", make: "Symphony CNC", model: "VMC 850", type: "VMC", origin: "Indian", city: "Ahmedabad",
+        popular: "Heavy-duty VMC — Pune / Aurangabad mid-size job shops", spindle_rpm: 8000, x_travel: 850, y_travel: 500, z_travel: 520,
+        rated_current_A: 40, claimed: { spindle_kw: 11.0, x_axis_kw: 1.5, y_axis_kw: 1.2, z_axis_kw: 1.0, coolant_kw: 0.75, atc_kw: 0.6, aux_kw: 0.5, total_kw: 16.55 }, idle_kw: 3.2
+    },
 
     {
         id: "CUSTOM", make: "Custom / Other", model: "User-defined", type: "VMC", origin: "—", city: "—",
