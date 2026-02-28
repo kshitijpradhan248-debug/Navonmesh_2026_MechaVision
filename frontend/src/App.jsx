@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { io } from 'socket.io-client'
 
-const BACKEND_URL = 'http://localhost:3001'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
 function fmt(n, d = 2) { return Number(n || 0).toFixed(d) }
 function useTime() {
